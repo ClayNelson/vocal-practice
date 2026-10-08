@@ -1,0 +1,41 @@
+name: VocalPractice
+options:
+  bundleIdPrefix: app.haklo
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  VocalPractice:
+    type: application
+    platform: iOS
+    sources: [VocalPractice]
+    info:
+      path: VocalPractice/Info.plist
+      properties:
+        CFBundleDisplayName: Vocal Practice
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIBackgroundModes: [audio]
+        NSMicrophoneUsageDescription: Records a take of each warmup and song so you can hear your progress.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.haklo.vocalpractice
+        TARGETED_DEVICE_FAMILY: "1"
+  VocalPracticeTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: VocalPractice
+schemes:
+  VocalPractice:
+    build:
+      targets:
+        VocalPractice: all
+    test:
+      targets: [VocalPracticeTests]

@@ -1,0 +1,91 @@
+# Vocal Practice: V1 Spec
+
+Owner: Clay Nelson
+Status: Draft, October 7, 2026
+
+## Problem
+
+Clay takes weekly lessons with Nicolette Holman (Mesmerize Studio). Her warmups arrive as audio tracks on a Trello board and by email, and his songs live in MyOps. Practice happens, but nothing queues it, tracks it, or shows progress. The studio policy asks for 3 to 5 practice days a week, split half warmups and half songs. V1 makes that routine automatic.
+
+## Goals
+
+1. Open the app, tap Start, and get today's session already built.
+2. Hit the weekly practice target Nicolette sets (3 to 5 days).
+3. Know where every song stands and what to work on next.
+4. Hear improvement over time.
+
+## Non-goals for v1
+
+- Pitch detection and range analysis (v2)
+- Lesson recording and transcription (v2)
+- Sync with MyOps or Trello (v2; v1 imports files by hand)
+- Sharing, accounts, backend, App Store release
+
+## Source material
+
+| Source | What it gives the app |
+| --- | --- |
+| Trello board "Clays Vocal Lessons", Warmups list | Warmup tracks (m4a): Precursor to breath fire starters; Breath fire starter to 125, 150, 175; Somewhere Over the Rainbow octave jumps; Waltz of the Flowers; Vegas Road Rage; Super Mario x Inspector Gadget mashup |
+| Email from Nicolette, Aug 14 2026 | Breath fire starter to F consonant (m4a) |
+| Trello "2026 Mesmerize Studio Policies" card | Practice rules: 3 days x 60 min, 4 x 45, or 5 x 30; half warmups, half songs |
+| Trello "1st Class Package" card | 30-lesson package; lessons on 8/19, 8/26, 9/3 so far; one gifted lesson used 9/11 |
+| MyOps `/songs/covers/` | Song repertoire (Good Ol' Boys, There Ain't No Good Chain Gang, originals) |
+
+## Core loop
+
+1. **Remind.** A notification on each scheduled practice day at a chosen time.
+2. **Plan.** The session planner fills the chosen length (30, 45, or 60 min): first half warmups, second half songs.
+3. **Practice.** The player runs each item in order: plays Nicolette's track for warmups, shows key and notes for songs, and records a take of each.
+4. **Log.** End of session: rate voice condition (1 to 5), mark items solid, add a note.
+5. **Review.** Weekly progress against target; per-item take history to compare old and new.
+
+## Session planner rules
+
+- Length = user choice of 30, 45, or 60 minutes (default from weekly plan: 3 days uses 60, 4 uses 45, 5 uses 30).
+- Warmup half:
+  - Ladder warmups (Breath fire starter 125 to 150 to 175) contribute only the current rung: the lowest level not yet marked solid. Precursor comes first until marked solid.
+  - Standalone warmups rotate by least recently practiced.
+  - Fill until the warmup half is used; never split an item.
+- Song half:
+  - Eligible statuses: learning, polishing, performance ready (seams and retired songs excluded).
+  - Order: songs flagged for an upcoming showcase first, then learning, then least recently practiced.
+- Voice condition 1 or 2 at check-in: halve the song block and drop the highest ladder rung.
+
+## Data model
+
+| Entity | Fields |
+| --- | --- |
+| Warmup | title, ladder group, ladder level, est. minutes, audio file, solid flag, last practiced |
+| Song | title, artist, key, status, est. minutes, lyrics, notes, MyOps path, showcase flag, last practiced |
+| Session | date, planned minutes, completed item ids, voice condition, notes |
+| Take | session, item, audio file, date |
+| Lesson | date, lesson number, notes |
+| Settings | days per week, reminder time, reminder weekdays, package size |
+
+Song status pipeline: seam, learning, polishing, performance ready, recorded, retired.
+
+## Screens
+
+1. **Today**: weekly ring (days practiced vs target), Start button with today's planned session, next lesson.
+2. **Session player**: one item at a time, play/pause track, record take, mark solid, next.
+3. **Warmups**: library, import m4a from Files, ladder view showing current rung.
+4. **Songs**: repertoire by status, detail with key, lyrics, notes, takes.
+5. **Lessons**: package countdown (used / 30), lesson notes.
+6. **Settings**: days per week, reminder time and days.
+
+## V2 candidates
+
+- Pitch tracking and weekly range (highest and lowest clean note)
+- Lesson capture: record, transcribe, turn notes into tasks
+- Pre-lesson brief
+- Showcase countdown that reweights the queue
+- Key fitting and transposition
+- Lyric memorization mode
+- MyOps and Trello sync; Siri shortcut "start practice"
+- Share the practice engine with the magic trick app
+
+## Success measures
+
+- Practice days per week meets target in 3 of 4 weeks
+- Every warmup ladder advances at least one rung per month
+- At least one song moves up a status each month

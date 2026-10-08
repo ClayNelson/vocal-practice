@@ -1,0 +1,8 @@
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+build/
+.build/
+.DS_Store
+*.m4a
