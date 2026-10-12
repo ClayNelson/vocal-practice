@@ -8,7 +8,7 @@ settings:
   base:
     SWIFT_VERSION: "5.10"
     MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    CURRENT_PROJECT_VERSION: "2"
     DEVELOPMENT_TEAM: FP8F8A7LL3
     CODE_SIGN_STYLE: Automatic
 targets:
@@ -20,6 +20,8 @@ targets:
       path: VocalPractice/Info.plist
       properties:
         CFBundleDisplayName: Vocal Practice
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIBackgroundModes: [audio]
