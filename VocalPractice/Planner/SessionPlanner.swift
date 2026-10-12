@@ -176,3 +176,11 @@ public extension Calendar {
         return cal
     }
 }
+
+public enum PracticeReview {
+    /// Sessions after the most recent lesson. With no lesson logged yet, every session counts.
+    public static func sinceLastLesson<S>(_ sessions: [S], date: (S) -> Date, lastLesson: Date?) -> [S] {
+        guard let lastLesson else { return sessions }
+        return sessions.filter { date($0) > lastLesson }
+    }
+}

@@ -96,3 +96,19 @@ final class TakeRecorder {
         return currentName
     }
 }
+
+extension AudioStorage {
+    /// Removes a stored recording; missing files are ignored.
+    static func remove(_ name: String, in folder: URL) {
+        try? FileManager.default.removeItem(at: folder.appending(path: name))
+    }
+}
+
+extension Warmup {
+    /// Imports a track from the Files picker, replacing (and deleting) any previous one.
+    func replaceTrack(from url: URL) {
+        guard let name = try? AudioStorage.importWarmup(from: url) else { return }
+        if let old = audioFileName { AudioStorage.remove(old, in: AudioStorage.warmups) }
+        audioFileName = name
+    }
+}
