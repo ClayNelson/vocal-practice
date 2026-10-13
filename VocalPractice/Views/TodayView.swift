@@ -71,6 +71,13 @@ struct TodayView: View {
                 }
             }
             .navigationTitle("Today")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { PitchView() } label: {
+                        Label("Pitch", systemImage: "tuningfork")
+                    }
+                }
+            }
             .safeAreaInset(edge: .bottom) {
                 Button { activePlan = IdentifiedPlan(plan: plan) } label: {
                     Label("Start \(sessionMinutes)-minute session", systemImage: "play.fill")

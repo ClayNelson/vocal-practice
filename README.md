@@ -33,6 +33,12 @@ The app seeds itself with Nicolette's warmups (from the Trello board and her Aug
 - Second half songs in Learning, Polishing, or Performance ready: showcase songs first, then Learning, then least recently practiced.
 - A rough or tired voice check-in halves the song block and drops ladders one rung.
 
+## Pitch screen
+
+Tap the tuning fork on the Today screen. Sing and you get the note name, a sharp or flat meter, a scrolling pitch line over note lanes, and your range for the sitting (lowest and highest notes held for half a second). Use headphones if anything is playing, or the mic will hear the speaker.
+
+The detector is YIN running on the live mic (`Pitch/PitchDetector.swift`), about 50 readings a second, with no network or account. It is the base for native exercises that will replace the Singing Carrots web step.
+
 ## Layout
 
 ```
@@ -40,12 +46,13 @@ VocalPractice/
   App/        app entry, tabs, settings keys
   Planner/    SessionPlanner and WeeklyProgress (pure Swift, unit tested)
   Models/     SwiftData models and first-launch seed data
+  Pitch/      YIN pitch detector, live mic tracker, pitch screen
   Services/   audio playback, take recording, reminders
   Views/      Today, session player, warmups, songs, lessons, settings
-Tests/        planner tests
+Tests/        planner and pitch detector tests
 docs/SPEC.md  v1 spec and v2 candidates
 ```
 
 ## Not yet built (v2)
 
-Pitch and range tracking, lesson recording and transcription, pre-lesson brief, showcase countdown, key fitting, lyric memorization, MyOps and Trello sync, Siri shortcut.
+Range history across sessions, native pitch exercises, lesson recording and transcription, pre-lesson brief, showcase countdown, key fitting, lyric memorization, MyOps and Trello sync, Siri shortcut.
