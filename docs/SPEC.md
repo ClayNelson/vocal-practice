@@ -50,12 +50,33 @@ Clay takes weekly lessons with Nicolette Holman (Mesmerize Studio). Her warmups 
   - Eligible statuses: learning, polishing, performance ready (seams and retired songs excluded).
   - Order: songs flagged for an upcoming showcase first, then learning, then least recently practiced.
 - Voice condition 1 or 2 at check-in: halve the song block and drop the highest ladder rung.
+- Web exercises count toward the warmup half and rotate by least recently practiced, same as standalone warmups.
+
+## Exercise sources
+
+Every warmup item has a source type, so the queue never depends on where an exercise lives. Swapping one source for another touches a single component, not the planner or the player flow.
+
+| Source type | What the player does | V1 |
+| --- | --- | --- |
+| Track | Plays Nicolette's audio file and records a take (current behavior) | Yes |
+| Web | Opens a saved Singing Carrots exercise in an in-app web view; on close, logs the session and asks "mark solid?" | Yes |
+| Native | Built-in pitch exercise using the app's own pitch detector (see V2) | No |
+
+Web source details:
+
+- Each web exercise stores a title, a URL on singingcarrots.com, and estimated minutes. Clay adds them by pasting a link.
+- Rendered in a `WKWebView` wrapped as a SwiftUI view (`WebExerciseView`).
+- Microphone: `NSMicrophoneUsageDescription` in Info.plist, plus a `WKUIDelegate` that grants media capture for the singingcarrots.com origin only, so the exercises work without a prompt every session.
+- Login: default persistent `WKWebsiteDataStore`, so the Singing Carrots session survives app restarts.
+- Scores are not read back from the page in v1. Completion is logged when the view closes; Clay can type a result into the session note.
+- Navigation outside singingcarrots.com opens in Safari rather than in the app.
+- Distribution: personal builds and TestFlight for a few friends only (each friend uses their own Singing Carrots login). If the app ever goes to the App Store, remove the web source or replace it with native exercises.
 
 ## Data model
 
 | Entity | Fields |
 | --- | --- |
-| Warmup | title, ladder group, ladder level, est. minutes, audio file, solid flag, last practiced |
+| Warmup | title, source type (track, web, native), ladder group, ladder level, est. minutes, audio file (track), URL (web), solid flag, last practiced |
 | Song | title, artist, key, status, est. minutes, lyrics, notes, MyOps path, showcase flag, last practiced |
 | Session | date, planned minutes, completed item ids, voice condition, notes |
 | Take | session, item, audio file, date |
@@ -67,8 +88,8 @@ Song status pipeline: seam, learning, polishing, performance ready, recorded, re
 ## Screens
 
 1. **Today**: weekly ring (days practiced vs target), Start button with today's planned session, next lesson.
-2. **Session player**: one item at a time, play/pause track, record take, mark solid, next.
-3. **Warmups**: library, import m4a from Files, ladder view showing current rung.
+2. **Session player**: one item at a time, play/pause track, record take, mark solid, next. Web items open the web view full screen with a Done button that returns to the queue.
+3. **Warmups**: library, import m4a from Files, add a Singing Carrots link, ladder view showing current rung.
 4. **Songs**: repertoire by status, detail with key, lyrics, notes, takes.
 5. **Lessons**: package countdown (used / 30), lesson notes.
 6. **Settings**: days per week, reminder time and days.
@@ -76,6 +97,7 @@ Song status pipeline: seam, learning, polishing, performance ready, recorded, re
 ## V2 candidates
 
 - Pitch tracking and weekly range (highest and lowest clean note)
+- Native exercise source: own pitch matching, range test, and interval drills built on the pitch tracker, as a replacement for web exercises
 - Lesson capture: record, transcribe, turn notes into tasks
 - Pre-lesson brief
 - Showcase countdown that reweights the queue
