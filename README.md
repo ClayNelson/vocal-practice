@@ -18,6 +18,21 @@ open VocalPractice.xcodeproj
 
 In Xcode, pick your Team under Signing & Capabilities for the VocalPractice target, choose your iPhone, and press Run. Run the planner tests with Cmd+U.
 
+## TestFlight
+
+Builds go to TestFlight from GitHub Actions on a Mac runner, so no Mac is needed to ship a build. Run it from the Actions tab or the GitHub mobile app: **Actions, TestFlight, Run workflow**. Each run tests, archives, signs, and uploads; the build number is the run number.
+
+One-time setup:
+
+1. **App Store Connect, Apps, +, New App.** Platform iOS, bundle ID `app.haklo.vocalpractice` (register it under Certificates, Identifiers & Profiles first if it isn't in the list). App names are unique across the store, so use something like "Vocal Practice Clay"; the home-screen name stays "Vocal Practice".
+2. **Users and Access, Integrations, App Store Connect API, +.** Role **Admin** (needed for cloud-managed signing). Download the .p8 once and note the Key ID and Issuer ID.
+3. **Repo secrets** (Settings, Secrets and variables, Actions):
+   - `APPLE_TEAM_ID`: 10-character team ID from developer.apple.com, Membership
+   - `ASC_KEY_ID`: the API key's ID
+   - `ASC_ISSUER_ID`: the issuer ID above the key list
+   - `ASC_KEY_P8`: the full text of the .p8 file, including the BEGIN and END lines
+4. **TestFlight tab:** add yourself as an internal tester. For friends, create an external group and add their emails; the first external build gets a short Apple beta review.
+
 ## First launch
 
 The app seeds itself with Nicolette's warmups (from the Trello board and her Aug 14 email), your current covers, and your lesson history. Audio tracks are not bundled:
