@@ -103,6 +103,7 @@ VocalPractice/
 Tests/        planner, pitch detector, and Trello mapping tests
 docs/SPEC.md  v1 spec and v2 candidates
 docs/SONG_PLAN.md  plan.json format shared by the plan-a-song skill and the app
+docs/IMPLEMENTATION_PLAN.md  next build (M0 CI, M1 song plans, M2 Claude), for Claude Code
 tools/        validate_plan.py for plan.json files
 web/          Trello sign-in relay page (host it for one-tap sign-in)
 ```
