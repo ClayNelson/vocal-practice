@@ -7,7 +7,7 @@ from datetime import date, timedelta
 
 BLOCKS = {"listen", "sections", "fullRun", "maintenance", "taper"}
 GOALS = {"showcase", "recording", "lesson", "none"}
-NOTE = re.compile(r"^[A-G](#|b)?[0-8]$")
+NOTE = re.compile(r"^[A-G](#|b|♯|♭)?[0-8]$")
 
 
 def d(s):
@@ -56,6 +56,12 @@ def validate(plan):
             errors.append("last phase must end on goal.date")
     for c in plan.get("checkpoints", []):
         d(c["due"])
+    for b in plan.get("blockedRanges") or []:
+        if d(b["end"]) < d(b["start"]):
+            errors.append(f"blocked range '{b.get('label')}': ends before it starts")
+    for s in (plan.get("assessment") or {}).get("sources") or []:
+        if not s.get("title") or not s.get("url"):
+            errors.append("assessment.sources entries need a title and url")
     return errors
 
 

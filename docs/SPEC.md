@@ -39,8 +39,8 @@ No App Store release, no accounts or backend of our own. Every per-person creden
 | Pitch screen (YIN detector, live note, range for the sitting) | Built, tested |
 | Trello sign-in, pull sync, onboarding (v1.1) | Built, tested (mapping); awaiting first TestFlight run |
 | TestFlight from GitHub Actions | Built |
-| Song plans and showcase mode | **Next build:** milestone M1 |
-| Plan a song with Claude | **After M1:** milestone M2 |
+| Song plans and showcase mode (M1) | Built, tested; awaiting first TestFlight run |
+| Plan a song with Claude | **Next build:** milestone M2 |
 | Singing Carrots web exercises | Designed (see Exercise sources), not built |
 | MyOps sync, lesson capture, native pitch exercises | Later |
 

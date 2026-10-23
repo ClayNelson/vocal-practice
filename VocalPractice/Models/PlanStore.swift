@@ -1,5 +1,21 @@
+import CoreTransferable
 import Foundation
 import SwiftData
+import UniformTypeIdentifiers
+
+/// An exported plan file for ShareLink.
+struct PlanExport: Transferable {
+    let data: Data
+    let fileName: String
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(exportedContentType: .json) { export in
+            let url = FileManager.default.temporaryDirectory.appending(path: export.fileName)
+            try export.data.write(to: url, options: .atomic)
+            return SentTransferredFile(url)
+        }
+    }
+}
 
 struct PlanError: LocalizedError {
     let messages: [String]
@@ -83,13 +99,11 @@ enum PlanStore {
         return plan
     }
 
-    /// Writes the export to a temporary `<title-kebab>.plan.json` for the share sheet.
-    static func exportFile(for song: Song) throws -> URL? {
-        guard let plan = exportPlan(for: song) else { return nil }
-        let name = PlanFormat.kebab(plan.song.title).isEmpty ? "song" : PlanFormat.kebab(plan.song.title)
-        let url = FileManager.default.temporaryDirectory.appending(path: "\(name).plan.json")
-        try SongPlan.encode(plan).write(to: url, options: .atomic)
-        return url
+    /// The export as `<title-kebab>.plan.json`, ready for the share sheet.
+    static func export(for song: Song) -> PlanExport? {
+        guard let plan = exportPlan(for: song), let data = try? SongPlan.encode(plan) else { return nil }
+        let name = PlanFormat.kebab(plan.song.title)
+        return PlanExport(data: data, fileName: "\(name.isEmpty ? "song" : name).plan.json")
     }
 
     /// Clears the plan, its sections, and checkpoints. The song and its takes stay.

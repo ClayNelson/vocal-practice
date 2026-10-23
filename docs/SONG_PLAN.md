@@ -15,7 +15,7 @@ The file is `plan.json` in the song folder, for example `songs/covers/oh-pretty-
 | `song.reference` | string | The recording to study |
 | `song.originalKey` | string | e.g. `A` |
 | `song.keyOptions` | [string] | Keys under consideration, first is the current pick |
-| `song.range.low`, `song.range.high` | string | Scientific pitch in the original key, e.g. `E3`, `F#4` |
+| `song.range.low`, `song.range.high` | string | Scientific pitch in the original key, e.g. `E3`, `F#4` (`♯` and `♭` also accepted) |
 | `song.tempoBPM` | int? | |
 | `song.minutesPerPass` | int | Practice minutes per pass (song length plus a reset) |
 | `goal.type` | string | `showcase`, `recording`, `lesson`, or `none` |
@@ -27,6 +27,8 @@ The file is `plan.json` in the song folder, for example `songs/covers/oh-pretty-
 | `checkpoints` | [Checkpoint] | Dated decisions |
 | `questionsForTeacher` | [string] | Feeds the pre-lesson brief |
 | `myOpsPath` | string | Song folder in MyOps |
+| `assessment` | object? | Optional. `summary` (the honest read, one paragraph), `keyRecommendation` (string), `sources` ([{ `title`, `url` }]) |
+| `blockedRanges` | [BlockedRange]? | Optional. Days off that became maintenance phases: `start`, `end` (inclusive dates), `label` |
 | `generatedBy`, `generatedAt` | string | Provenance |
 
 **Section:** `id` (kebab-case), `title`, `difficulty` (`high`, `medium`, `low`), `focus` (one line on what to work on).
@@ -44,6 +46,8 @@ The file is `plan.json` in the song folder, for example `songs/covers/oh-pretty-
 | `taper` | One short run; skipped when the voice check-in is rough |
 
 **Checkpoint:** `title`, `due` (date), `done` (bool).
+
+`phase.notes` is optional. Unknown fields are ignored, so older app builds can read newer files.
 
 ## Rules a plan must follow
 

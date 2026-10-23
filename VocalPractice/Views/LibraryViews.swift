@@ -186,6 +186,8 @@ struct SongsView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Song.title) private var songs: [Song]
     @State private var newSong: Song?
+    @State private var importing = false
+    @State private var importError: String?
 
     var body: some View {
         NavigationStack {
@@ -215,11 +217,27 @@ struct SongsView: View {
             .navigationDestination(for: Song.self) { SongDetailView(song: $0) }
             .navigationDestination(item: $newSong) { SongDetailView(song: $0) }
             .toolbar {
+                Button { importing = true } label: { Image(systemName: "square.and.arrow.down") }
+                    .accessibilityLabel("Import plan")
                 Button {
                     let song = Song(title: "New song")
                     context.insert(song)
                     newSong = song
                 } label: { Image(systemName: "plus") }
+            }
+            // A plan attaches to the song with the same title and artist, or creates it.
+            .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
+                guard case .success(let url) = result else { return }
+                do {
+                    newSong = try PlanStore.importPlan(try PlanStore.read(url), in: context)
+                } catch {
+                    importError = error.localizedDescription
+                }
+            }
+            .alert("Couldn't import that plan", isPresented: Binding(get: { importError != nil }, set: { if !$0 { importError = nil } })) {
+                Button("OK") {}
+            } message: {
+                Text(importError ?? "")
             }
         }
     }
@@ -230,8 +248,10 @@ struct SongDetailView: View {
     @Query(sort: \Take.date, order: .reverse) private var allTakes: [Take]
     @State private var player = TrackPlayer()
     @State private var playingTake: UUID?
+    @State private var sectionFilter: String?
 
     private var takes: [Take] { allTakes.filter { $0.itemID == song.id } }
+    private var shownTakes: [Take] { sectionFilter.map { id in takes.filter { $0.sectionID == id } } ?? takes }
 
     var body: some View {
         Form {
@@ -247,13 +267,14 @@ struct SongDetailView: View {
                 TextField("MyOps path", text: $song.myOpsPath)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
             }
+            SongPlanSections(song: song, takes: takes, sectionFilter: $sectionFilter)
             Section("Practice notes") {
                 TextField("From lessons, what to fix", text: $song.notes, axis: .vertical).lineLimit(2...8)
             }
             Section("Lyrics") {
                 TextField("Paste lyrics", text: $song.lyrics, axis: .vertical).lineLimit(4...20)
             }
-            TakesSection(takes: takes, player: player, playingTake: $playingTake)
+            TakesSection(takes: shownTakes, player: player, playingTake: $playingTake)
         }
         .navigationTitle(song.title)
         .onDisappear { player.stop() }
