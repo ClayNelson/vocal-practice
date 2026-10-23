@@ -96,6 +96,8 @@ Song status pipeline: seam, learning, polishing, performance ready, recorded, re
 
 ## V2 candidates
 
+Worked example that prioritizes these: [Oh, Pretty Woman to the January showcase](examples/showcase-oh-pretty-woman.md).
+
 - Pitch tracking and weekly range (highest and lowest clean note)
 - Native exercise source: own pitch matching, range test, and interval drills built on the pitch tracker, as a replacement for web exercises
 - Lesson capture: record, transcribe, turn notes into tasks

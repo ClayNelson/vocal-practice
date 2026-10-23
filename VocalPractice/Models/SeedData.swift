@@ -27,7 +27,14 @@ enum SeedData {
             Song(title: "There Ain't No Good Chain Gang", artist: "Johnny Cash & Waylon Jennings", myOpsPath: "songs/covers"),
             Song(title: "Cadillac's Daughter", artist: "Clay Nelson", status: .seam),
         ]
+        let prettyWoman = Song(title: "Oh, Pretty Woman", artist: "Roy Orbison",
+                               myOpsPath: "songs/covers/oh-pretty-woman-roy-orbison")
+        prettyWoman.key = "A"
+        prettyWoman.minutes = 6
+        prettyWoman.showcase = true
+        prettyWoman.notes = "Showcase, late Jan 2027. Lock key (A, Ab, or G) by Nov 8. See docs/examples/showcase-oh-pretty-woman.md"
         songs.forEach { context.insert($0) }
+        context.insert(prettyWoman)
 
         let lessons: [(String, Int, Bool)] = [("2026-08-19", 1, false), ("2026-08-26", 2, false),
                                               ("2026-09-03", 3, false), ("2026-09-11", 0, true)]
