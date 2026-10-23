@@ -35,11 +35,46 @@ One-time setup:
 
 ## First launch
 
-The app seeds itself with Nicolette's warmups (from the Trello board and her Aug 14 email), your current covers, and your lesson history. Audio tracks are not bundled:
+A welcome screen asks to connect Trello:
 
-1. Save the m4a files from Trello and email to Files on your iPhone.
-2. On the **Warmups** tab, tap the download icon next to each warmup and pick its track.
-3. In **Settings**, set practice days and reminder time, then tap Save reminders.
+1. **Connect Trello.** Sign in to the Trello account the lesson board is shared with, and allow read access.
+2. **Pick the board.** The app picks the lesson board, the Warmups list, and the lesson package card when it can; change any of them in Settings.
+3. **Done.** It syncs once. Warmups and their tracks fill in, along with the lesson history.
+
+"Skip for now" starts empty. To demo with Clay's content, use **Settings, Sample content**.
+
+Then in **Settings**, set practice days and reminder time, and tap Save reminders.
+
+## Trello sync
+
+Pull-only: the app reads the board and never changes it.
+
+| On the board | In the app |
+| --- | --- |
+| Each card in the Warmups list | A warmup. Title follows the card. "BFS to 200" style names become ladder rungs. |
+| The card's uploaded audio file | The warmup's track, downloaded once and again only if the attachment changes |
+| Package card lines like `4. 10/16`, plus "Gifted" lines | Lesson history; "30 Classes" sets the package size |
+
+**When it syncs:**
+- On launch, if the last sync was more than 6 hours ago
+- When you pull to refresh on the Warmups tab
+- When you tap **Sync now** in Settings
+
+**What it leaves alone:**
+- Solid flags, practice history, and takes are never touched.
+- Nothing is deleted. A warmup whose card is archived stays until you remove it.
+- Warmups added by hand keep their place. On first sync, a seeded warmup with a matching title is adopted, not duplicated.
+
+Each person signs in with their own Trello account and gets a read-only token, stored in the iPhone Keychain. That's what lets Nicolette's students use their own boards.
+
+### One-time setup (Clay)
+
+1. **Create the API key.** Go to https://trello.com/apps/admin, create a Power-Up named "Vocal Practice" in your workspace, open its **Trello Auth** tab, and choose **Generate a new API key**. The key identifies the app, not a person. Do not use or share the secret.
+2. **Add the repo secret** `TRELLO_API_KEY` with that key. Builds without it have sync turned off and show a warning in the Actions log.
+3. **Choose a sign-in style:**
+   - **Paste token (works now, no hosting):** do nothing more. Connect opens Trello in Safari; after tapping Allow, Trello shows a token to copy and paste back into the app.
+   - **One tap (recommended before sharing):** host `web/trello-callback.html` on an https site you control (GitHub Pages, Vercel, or similar). Add that site's origin, for example `https://yourname.github.io`, under **Allowed origins** on the Power-Up's Trello Auth tab. Then set the repo **variable** (not secret) `TRELLO_RETURN_URL` to the full page URL. Sign-in then returns to the app automatically.
+4. **Run the TestFlight workflow.**
 
 ## How a session is built
 
@@ -62,12 +97,14 @@ VocalPractice/
   Planner/    SessionPlanner and WeeklyProgress (pure Swift, unit tested)
   Models/     SwiftData models and first-launch seed data
   Pitch/      YIN pitch detector, live mic tracker, pitch screen
+  Trello/     sign-in, read-only client, pull sync, onboarding (mapping is pure Swift, unit tested)
   Services/   audio playback, take recording, reminders
   Views/      Today, session player, warmups, songs, lessons, settings
-Tests/        planner and pitch detector tests
+Tests/        planner, pitch detector, and Trello mapping tests
 docs/SPEC.md  v1 spec and v2 candidates
+web/          Trello sign-in relay page (host it for one-tap sign-in)
 ```
 
 ## Not yet built (v2)
 
-Range history across sessions, native pitch exercises, lesson recording and transcription, pre-lesson brief, showcase countdown, key fitting, lyric memorization, MyOps and Trello sync, Siri shortcut.
+Range history across sessions, native pitch exercises, lesson recording and transcription, pre-lesson brief, showcase countdown, key fitting, lyric memorization, MyOps sync, Siri shortcut.

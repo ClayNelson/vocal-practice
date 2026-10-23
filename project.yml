@@ -23,8 +23,13 @@ targets:
         UIBackgroundModes: [audio]
         NSMicrophoneUsageDescription: Records a take of each warmup and song so you can hear your progress, and listens for pitch on the Pitch screen.
         ITSAppUsesNonExemptEncryption: false
+        # Trello sign-in: filled from build settings below (CI passes them from repo secrets/variables).
+        TrelloAPIKey: $(TRELLO_API_KEY)
+        TrelloReturnURL: $(TRELLO_RETURN_URL)
     settings:
       base:
+        TRELLO_API_KEY: ""
+        TRELLO_RETURN_URL: ""
         PRODUCT_BUNDLE_IDENTIFIER: app.haklo.vocalpractice
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic

@@ -21,6 +21,8 @@ jobs:
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
       ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
       BUILD_NUMBER: ${{ github.run_number }}
+      TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}
+      TRELLO_RETURN_URL: ${{ vars.TRELLO_RETURN_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +31,8 @@ jobs:
           missing=""
           for v in TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do if [ -z "${!v}" ]; then missing="$missing $v"; fi; done
           if [ -n "$missing" ]; then echo "::error::Missing repository secrets:$missing (see README, TestFlight section)"; exit 1; fi
+          if [ -z "$TRELLO_API_KEY" ]; then echo "::warning::No TRELLO_API_KEY secret: this build will have Trello sync turned off (see README, Trello sync)."; fi
+          if [ -z "$TRELLO_RETURN_URL" ]; then echo "::notice::No TRELLO_RETURN_URL variable: Trello sign-in will use the paste-the-token flow."; fi
 
       - name: Generate Xcode project
         run: |
@@ -54,7 +58,8 @@ jobs:
             -archivePath "$RUNNER_TEMP/VocalPractice.xcarchive" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$TEAM_ID" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" | xcbeautify
+            DEVELOPMENT_TEAM="$TEAM_ID" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            TRELLO_API_KEY="$TRELLO_API_KEY" TRELLO_RETURN_URL="$TRELLO_RETURN_URL" | xcbeautify
 
       - name: Upload to TestFlight
         run: |

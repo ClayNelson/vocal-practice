@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Vocal Practice</title>
+<style>
+  body { font: 17px -apple-system, system-ui, sans-serif; margin: 0; padding: 48px 16px; text-align: center; color: #1c1c1e; background: #fff; }
+  @media (prefers-color-scheme: dark) { body { color: #f2f2f7; background: #000; } a { color: #8e8cf8; } }
+  a { color: #4f46e5; }
+</style>
+</head>
+<body>
+<p id="msg">Returning to Vocal Practice...</p>
+<script>
+  // Trello redirects here with the token in the fragment (#token=...). The fragment never reaches
+  // a server; this page only hands it to the app. Nothing is stored or logged.
+  var target = "vocalpractice://trello-auth" + (window.location.hash || "");
+  window.location.replace(target);
+  setTimeout(function () {
+    var a = document.createElement("a");
+    a.href = target;
+    a.textContent = "Tap to return to Vocal Practice";
+    var msg = document.getElementById("msg");
+    msg.textContent = "";
+    msg.appendChild(a);
+  }, 1500);
+</script>
+</body>
+</html>

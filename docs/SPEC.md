@@ -18,7 +18,7 @@ Clay takes weekly lessons with Nicolette Holman (Mesmerize Studio). Her warmups 
 
 - Pitch detection and range analysis (v2)
 - Lesson recording and transcription (v2)
-- Sync with MyOps or Trello (v2; v1 imports files by hand)
+- Sync with MyOps (v2). Trello sync shipped in v1.1, see below.
 - Sharing, accounts, backend, App Store release
 
 ## Source material
@@ -94,6 +94,17 @@ Song status pipeline: seam, learning, polishing, performance ready, recorded, re
 5. **Lessons**: package countdown (used / 30), lesson notes.
 6. **Settings**: days per week, reminder time and days.
 
+## V1.1: Trello sync and multi-user sign-in
+
+Added October 23, 2026 so Nicolette can hand the app (via TestFlight) to her students.
+
+- Each person signs in with their own Trello account through Trello's authorize page (read scope, no expiry). The token lives in the Keychain; the app's API key is set at build time from the `TRELLO_API_KEY` secret.
+- Sign-in returns through a hosted relay page (`web/trello-callback.html`, set with `TRELLO_RETURN_URL`) or, without one, by pasting the token Trello shows.
+- Onboarding picks the lesson board, the Warmups list, and the lesson package card; all three are changeable in Settings.
+- Pull-only sync: cards become warmups (ladder rungs parsed from names), audio attachments become tracks, package card lines become lessons. Nothing is written to Trello and nothing local is deleted.
+- Clay's seed content no longer loads automatically; it is under Settings, Sample content.
+- Details and setup: README, Trello sync.
+
 ## V2 candidates
 
 Worked example that prioritizes these: [Oh, Pretty Woman to the January showcase](examples/showcase-oh-pretty-woman.md).
@@ -105,7 +116,7 @@ Worked example that prioritizes these: [Oh, Pretty Woman to the January showcase
 - Showcase countdown that reweights the queue
 - Key fitting and transposition
 - Lyric memorization mode
-- MyOps and Trello sync; Siri shortcut "start practice"
+- MyOps sync; Siri shortcut "start practice"
 - Share the practice engine with the magic trick app
 
 ## Success measures
