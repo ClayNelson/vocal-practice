@@ -20,7 +20,7 @@ public enum TrelloMapping {
         guard isBreath else { return WarmupShape(ladderGroup: nil, ladderLevel: 0) }
         if n.contains("precursor") { return WarmupShape(ladderGroup: breathLadder, ladderLevel: 0) }
         if let r = n.range(of: #"\bto\s+\d{2,3}\b"#, options: .regularExpression),
-           let level = Int(n[r].filter(\.isNumber)) {
+           let level = Int(String(n[r].filter(\.isNumber))) {
             return WarmupShape(ladderGroup: breathLadder, ladderLevel: level)
         }
         return WarmupShape(ladderGroup: nil, ladderLevel: 0)
@@ -59,7 +59,8 @@ public enum TrelloMapping {
     ///     5.
     ///
     /// Numbered lines with a date are lessons; a line mentioning "gifted" with a date is a gifted lesson.
-    /// Dates without a year take the most recent year that does not put them after `reference`.
+    /// Dates without a year take the reference year, unless that puts them more than 60 days after `reference`
+    /// (a December lesson read in January), in which case they belong to the year before.
     public static func lessonPackage(from text: String, reference: Date, calendar: Calendar = .current) -> LessonPackage {
         var size: Int?
         if let r = text.range(of: #"\d+\s+(classes|lessons)"#, options: [.regularExpression, .caseInsensitive]) {
@@ -105,7 +106,7 @@ public enum TrelloMapping {
         }
         let year = calendar.component(.year, from: reference)
         guard let date = calendar.date(from: DateComponents(year: year, month: month, day: day)) else { return nil }
-        if date > reference {
+        if let limit = calendar.date(byAdding: .day, value: 60, to: reference), date > limit {
             return calendar.date(from: DateComponents(year: year - 1, month: month, day: day))
         }
         return date

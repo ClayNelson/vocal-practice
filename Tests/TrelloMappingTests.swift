@@ -81,6 +81,12 @@ final class TrelloMappingTests: XCTestCase {
         XCTAssertEqual(package.lessons.first?.date, date(2026, 12, 18))
     }
 
+    func testUpcomingLessonStaysThisYear() {
+        // Written ahead of the lesson: Oct 30 read on Oct 23 is this year, not last.
+        let package = TrelloMapping.lessonPackage(from: "5. 10/30", reference: date(2026, 10, 23), calendar: calendar)
+        XCTAssertEqual(package.lessons.first?.date, date(2026, 10, 30))
+    }
+
     func testExplicitYearIsKept() {
         let package = TrelloMapping.lessonPackage(from: "1. 1/5/27", reference: date(2026, 10, 23), calendar: calendar)
         XCTAssertEqual(package.lessons.first?.date, date(2027, 1, 5))

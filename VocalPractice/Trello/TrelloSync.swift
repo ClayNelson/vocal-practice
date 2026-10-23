@@ -16,6 +16,7 @@ enum TrelloSync {
         var updated = 0
         var tracks = 0
         var lessons = 0
+        var failedTracks = 0
 
         var summary: String {
             let parts = [
@@ -23,6 +24,7 @@ enum TrelloSync {
                 updated > 0 ? "\(updated) updated" : nil,
                 tracks > 0 ? "\(tracks) track\(tracks == 1 ? "" : "s") downloaded" : nil,
                 lessons > 0 ? "\(lessons) lesson\(lessons == 1 ? "" : "s") added" : nil,
+                failedTracks > 0 ? "\(failedTracks) track\(failedTracks == 1 ? "" : "s") failed, will retry" : nil,
             ].compactMap { $0 }
             return parts.isEmpty ? "Up to date" : parts.joined(separator: ", ")
         }
@@ -39,8 +41,14 @@ enum TrelloSync {
         _ = try? await run(context: context)
     }
 
+    /// Prevents a launch sync and a manual sync from overlapping and adding the same card twice.
+    private static var isRunning = false
+
     @discardableResult
     static func run(context: ModelContext) async throws -> Report {
+        guard !isRunning else { return Report() }
+        isRunning = true
+        defer { isRunning = false }
         guard TrelloConfig.isConfigured else { throw TrelloError.notConfigured }
         guard let client = TrelloClient.current() else { throw TrelloError.notConnected }
         let defaults = UserDefaults.standard
@@ -75,16 +83,23 @@ enum TrelloSync {
 
             if let attachment = card.audioAttachment,
                attachment.id != warmup.trelloAttachmentID || !hasTrack(warmup) {
-                let name = try await client.download(attachment, into: AudioStorage.warmups)
-                if let old = warmup.audioFileName, old != name {
-                    try? FileManager.default.removeItem(at: AudioStorage.warmups.appending(path: old))
+                do {
+                    let name = try await client.download(attachment, into: AudioStorage.warmups)
+                    if let old = warmup.audioFileName, old != name {
+                        try? FileManager.default.removeItem(at: AudioStorage.warmups.appending(path: old))
+                    }
+                    warmup.audioFileName = name
+                    warmup.trelloAttachmentID = attachment.id
+                    if let minutes = practiceMinutes(for: AudioStorage.warmups.appending(path: name)) {
+                        warmup.minutes = minutes
+                    }
+                    report.tracks += 1
+                } catch TrelloError.unauthorized {
+                    throw TrelloError.unauthorized
+                } catch {
+                    // One bad download shouldn't stop the rest; the next sync retries it.
+                    report.failedTracks += 1
                 }
-                warmup.audioFileName = name
-                warmup.trelloAttachmentID = attachment.id
-                if let minutes = practiceMinutes(for: AudioStorage.warmups.appending(path: name)) {
-                    warmup.minutes = minutes
-                }
-                report.tracks += 1
             }
         }
 
@@ -95,10 +110,8 @@ enum TrelloSync {
             let lessons = try context.fetch(FetchDescriptor<Lesson>())
             let calendar = Calendar.current
             for entry in package.lessons {
-                let known = lessons.contains {
-                    calendar.isDate($0.date, inSameDayAs: entry.date)
-                        || (!entry.isGifted && !$0.isGifted && $0.number == entry.number)
-                }
+                // Match by day only: a new package restarts numbering at 1.
+                let known = lessons.contains { calendar.isDate($0.date, inSameDayAs: entry.date) }
                 guard !known else { continue }
                 context.insert(Lesson(date: entry.date, number: entry.number,
                                       notes: entry.isGifted ? "Gifted lesson (from Trello)" : "",
