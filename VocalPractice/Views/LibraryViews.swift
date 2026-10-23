@@ -28,11 +28,12 @@ struct WarmupsView: View {
                     ForEach(warmups.filter { $0.ladderGroup == nil }) { row($0, isCurrent: false) }
                         .onDelete { offsets in
                             let standalone = warmups.filter { $0.ladderGroup == nil }
-                            offsets.map { standalone[$0] }.forEach { context.delete($0) }
+                            offsets.map { standalone[$0] }.forEach(delete)
                         }
                 }
             }
             .navigationTitle("Warmups")
+            .navigationDestination(for: Warmup.self) { WarmupDetailView(warmup: $0) }
             .refreshable { await syncFromTrello() }
             .safeAreaInset(edge: .bottom) {
                 if let syncMessage {
@@ -42,9 +43,8 @@ struct WarmupsView: View {
             .toolbar { Button { showingAdd = true } label: { Image(systemName: "plus") } }
             .fileImporter(isPresented: Binding(get: { importTarget != nil }, set: { if !$0 { importTarget = nil } }),
                           allowedContentTypes: [.audio]) { result in
-                if case .success(let url) = result, let target = importTarget,
-                   let name = try? AudioStorage.importWarmup(from: url) {
-                    target.audioFileName = name
+                if case .success(let url) = result, let target = importTarget {
+                    target.replaceTrack(from: url)
                 }
                 importTarget = nil
             }
@@ -67,23 +67,90 @@ struct WarmupsView: View {
         return rungs.first { !$0.isSolid } ?? rungs.last
     }
 
+    private func delete(_ warmup: Warmup) {
+        if let name = warmup.audioFileName { AudioStorage.remove(name, in: AudioStorage.warmups) }
+        context.delete(warmup)
+    }
+
     private func row(_ warmup: Warmup, isCurrent: Bool) -> some View {
-        HStack {
-            Image(systemName: warmup.isSolid ? "checkmark.circle.fill" : (isCurrent ? "arrow.right.circle.fill" : "circle"))
-                .foregroundStyle(warmup.isSolid ? .green : (isCurrent ? .indigo : .secondary))
-            VStack(alignment: .leading) {
-                Text(warmup.title)
-                Text(warmup.audioFileName == nil ? "No track" : "Track ready")
-                    .font(.caption).foregroundStyle(warmup.audioFileName == nil ? .orange : .secondary)
+        NavigationLink(value: warmup) {
+            HStack {
+                Image(systemName: warmup.isSolid ? "checkmark.circle.fill" : (isCurrent ? "arrow.right.circle.fill" : "circle"))
+                    .foregroundStyle(warmup.isSolid ? .green : (isCurrent ? .indigo : .secondary))
+                VStack(alignment: .leading) {
+                    Text(warmup.title)
+                    Text(warmup.audioFileName == nil ? "No track" : "Track ready")
+                        .font(.caption).foregroundStyle(warmup.audioFileName == nil ? .orange : .secondary)
+                }
+                Spacer()
+                Button { importTarget = warmup } label: { Image(systemName: "square.and.arrow.down") }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel("Import track for \(warmup.title)")
             }
-            Spacer()
-            Button { importTarget = warmup } label: { Image(systemName: "square.and.arrow.down") }
-                .buttonStyle(.borderless)
-                .accessibilityLabel("Import track for \(warmup.title)")
         }
         .swipeActions(edge: .leading) {
             Button(warmup.isSolid ? "Not solid" : "Solid") { warmup.isSolid.toggle() }.tint(.green)
         }
+    }
+}
+
+struct WarmupDetailView: View {
+    @Bindable var warmup: Warmup
+    @Query(sort: \Take.date, order: .reverse) private var allTakes: [Take]
+    @State private var player = TrackPlayer()
+    @State private var playingTake: UUID?
+    @State private var trackLoaded = false
+    @State private var importing = false
+
+    private var takes: [Take] { allTakes.filter { $0.itemID == warmup.id } }
+    private var playingTrack: Bool { playingTake == nil && player.isPlaying }
+
+    var body: some View {
+        Form {
+            Section {
+                TextField("Title", text: $warmup.title)
+                Stepper("\(warmup.minutes) min per session", value: $warmup.minutes, in: 1...15)
+                Toggle("Solid", isOn: $warmup.isSolid)
+                if let group = warmup.ladderGroup {
+                    LabeledContent("Ladder", value: warmup.ladderLevel == 0 ? group : "\(group) · \(warmup.ladderLevel)")
+                }
+                if let last = warmup.lastPracticed {
+                    LabeledContent("Last practiced", value: last.formatted(date: .abbreviated, time: .omitted))
+                }
+                if !warmup.source.isEmpty { LabeledContent("Source", value: warmup.source) }
+            }
+            Section("Nicolette's track") {
+                if let link = warmup.linkURL.flatMap(URL.init) {
+                    Link(destination: link) { Label("Watch on YouTube", systemImage: "play.rectangle") }
+                }
+                if warmup.audioFileName != nil {
+                    Button { toggleTrack() } label: {
+                        Label(playingTrack ? "Pause" : "Play track", systemImage: playingTrack ? "pause.fill" : "play.fill")
+                    }
+                    if trackLoaded && playingTake == nil { ProgressView(value: player.progress) }
+                }
+                Button(warmup.audioFileName == nil ? "Import track from Files" : "Replace track") { importing = true }
+            }
+            TakesSection(takes: takes, player: player, playingTake: $playingTake)
+        }
+        .navigationTitle(warmup.title)
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.audio]) { result in
+            if case .success(let url) = result {
+                player.stop(); trackLoaded = false
+                warmup.replaceTrack(from: url)
+            }
+        }
+        .onChange(of: playingTake) { if playingTake != nil { trackLoaded = false } }
+        .onDisappear { player.stop() }
+    }
+
+    private func toggleTrack() {
+        if playingTake != nil { player.stop(); playingTake = nil; trackLoaded = false }
+        if !trackLoaded, let name = warmup.audioFileName {
+            player.load(AudioStorage.warmups.appending(path: name))
+            trackLoaded = true
+        }
+        player.toggle()
     }
 }
 
@@ -186,19 +253,7 @@ struct SongDetailView: View {
             Section("Lyrics") {
                 TextField("Paste lyrics", text: $song.lyrics, axis: .vertical).lineLimit(4...20)
             }
-            Section("Takes (\(takes.count))") {
-                if takes.isEmpty { Text("Record takes during practice to hear progress.").foregroundStyle(.secondary) }
-                ForEach(takes) { take in
-                    Button {
-                        if playingTake == take.id { player.stop(); playingTake = nil; return }
-                        player.load(AudioStorage.takes.appending(path: take.audioFileName))
-                        player.toggle(); playingTake = take.id
-                    } label: {
-                        Label(take.date.formatted(date: .abbreviated, time: .shortened),
-                              systemImage: playingTake == take.id ? "stop.fill" : "play.fill")
-                    }
-                }
-            }
+            TakesSection(takes: takes, player: player, playingTake: $playingTake)
         }
         .navigationTitle(song.title)
         .onDisappear { player.stop() }
@@ -210,9 +265,16 @@ struct SongDetailView: View {
 struct LessonsView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Lesson.date, order: .reverse) private var lessons: [Lesson]
+    @Query(sort: \PracticeSession.date, order: .reverse) private var sessions: [PracticeSession]
     @AppStorage(Prefs.packageSize) private var packageSize = 30
 
     private var used: Int { lessons.filter { !$0.isGifted }.count }
+    private var sinceLastLesson: [PracticeSession] {
+        PracticeReview.sinceLastLesson(sessions, date: \.date, lastLesson: lessons.first?.date)
+    }
+    private var daysSinceLastLesson: Int {
+        Set(sinceLastLesson.map { Calendar.current.startOfDay(for: $0.date) }).count
+    }
 
     var body: some View {
         NavigationStack {
@@ -221,6 +283,21 @@ struct LessonsView: View {
                     LabeledContent("Lessons used", value: "\(used) of \(packageSize)")
                     LabeledContent("Remaining", value: "\(max(0, packageSize - used))")
                     ProgressView(value: Double(min(used, packageSize)), total: Double(packageSize))
+                }
+                Section("Since last lesson") {
+                    LabeledContent("Practice days", value: "\(daysSinceLastLesson)")
+                    let noted = sinceLastLesson.filter { !$0.notes.isEmpty }
+                    if noted.isEmpty {
+                        Text("Notes you save after a session show up here, ready for Nicolette.")
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(noted) { session in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(session.notes)
+                            Text(session.date.formatted(date: .abbreviated, time: .omitted))
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 Section("History") {
                     ForEach(lessons) { lesson in

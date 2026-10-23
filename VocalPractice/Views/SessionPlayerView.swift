@@ -59,9 +59,14 @@ struct SessionPlayerView: View {
                     }
                     .accessibilityLabel(player.isPlaying ? "Pause track" : "Play track")
                 }
-            } else if case .warmup = item {
-                Text("No track yet. Import Nicolette's m4a on the Warmups tab.")
-                    .font(.footnote).foregroundStyle(.secondary)
+            } else if case .warmup(let w) = item {
+                if let link = warmupModel(w.id)?.linkURL.flatMap(URL.init) {
+                    Link(destination: link) { Label("Watch on YouTube", systemImage: "play.rectangle") }
+                        .buttonStyle(.bordered)
+                } else {
+                    Text("No track yet. Import Nicolette's m4a on the Warmups tab.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
             }
 
             Button { toggleRecording(item) } label: {

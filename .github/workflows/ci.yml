@@ -1,0 +1,31 @@
+name: CI
+
+# Builds and runs the unit tests on every push and pull request. No signing, secrets, or upload.
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash  # -eo pipefail, so xcodebuild failures aren't hidden by xcbeautify
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Run unit tests
+        run: |
+          SIM=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k in sorted(d, reverse=True) if 'iOS' in k for x in d[k] if x['name'].startswith('iPhone')))")
+          xcodebuild test -project VocalPractice.xcodeproj -scheme VocalPractice \
+            -destination "id=$SIM" CODE_SIGNING_ALLOWED=NO | xcbeautify

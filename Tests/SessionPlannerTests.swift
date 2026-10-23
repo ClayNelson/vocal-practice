@@ -83,4 +83,11 @@ final class SessionPlannerTests: XCTestCase {
         ]
         XCTAssertEqual(WeeklyProgress.daysPracticed(sessionDates: dates, now: wed, calendar: cal), 2)
     }
+
+    func testSinceLastLessonKeepsOnlyLaterSessions() {
+        let t = { Date(timeIntervalSince1970: $0) }
+        let dates = [t(500), t(1_000), t(1_500)]
+        XCTAssertEqual(PracticeReview.sinceLastLesson(dates, date: { $0 }, lastLesson: t(1_000)), [t(1_500)])
+        XCTAssertEqual(PracticeReview.sinceLastLesson(dates, date: { $0 }, lastLesson: nil), dates)
+    }
 }

@@ -10,6 +10,8 @@ final class Warmup {
     var minutes: Int = 4
     /// File name inside the app's Documents/Warmups folder.
     var audioFileName: String?
+    /// For warmups that live on YouTube instead of as an audio file (e.g. the Super Mario mashup).
+    var linkURL: String?
     var isSolid: Bool = false
     var lastPracticed: Date?
     var source: String = ""
@@ -19,12 +21,14 @@ final class Warmup {
     /// The Trello attachment the current track was downloaded from, so unchanged tracks are not re-downloaded.
     var trelloAttachmentID: String?
 
-    init(title: String, ladderGroup: String? = nil, ladderLevel: Int = 0, minutes: Int = 4, source: String = "") {
+    init(title: String, ladderGroup: String? = nil, ladderLevel: Int = 0, minutes: Int = 4,
+         source: String = "", linkURL: String? = nil) {
         self.title = title
         self.ladderGroup = ladderGroup
         self.ladderLevel = ladderLevel
         self.minutes = minutes
         self.source = source
+        self.linkURL = linkURL
     }
 
     var snapshot: WarmupSnapshot {

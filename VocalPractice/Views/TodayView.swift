@@ -44,7 +44,7 @@ struct TodayView: View {
 
                 Section("How's your voice?") {
                     Picker("Voice", selection: $voiceCondition) {
-                        ForEach(1...5, id: \.self) { Text(conditionLabel($0)).tag($0) }
+                        ForEach(1...5, id: \.self) { Text(voiceConditionLabel($0)).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     if voiceCondition <= 2 {
@@ -77,6 +77,10 @@ struct TodayView: View {
                         Label("Pitch", systemImage: "tuningfork")
                     }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { SessionHistoryView() } label: { Image(systemName: "clock.arrow.circlepath") }
+                        .accessibilityLabel("Session history")
+                }
             }
             .safeAreaInset(edge: .bottom) {
                 Button { activePlan = IdentifiedPlan(plan: plan) } label: {
@@ -94,10 +98,6 @@ struct TodayView: View {
     }
 
     private func minutesOf(_ items: [PlanItem]) -> Int { items.reduce(0) { $0 + $1.minutes } }
-
-    private func conditionLabel(_ value: Int) -> String {
-        ["Rough", "Tired", "OK", "Good", "Great"][value - 1]
-    }
 }
 
 struct IdentifiedPlan: Identifiable {

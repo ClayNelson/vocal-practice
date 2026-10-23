@@ -83,6 +83,12 @@ Each person signs in with their own Trello account and gets a read-only token, s
 - Second half songs in Learning, Polishing, or Performance ready: showcase songs first, then Learning, then least recently practiced.
 - A rough or tired voice check-in halves the song block and drops ladders one rung.
 
+## Reviewing progress
+
+- **Today** has a clock button that opens session history: date, voice condition, what got done, notes, and every take from that session.
+- **Warmups** and **Songs** detail screens list the takes recorded for that item, newest first, so you can play an old take against a new one. Swipe to delete a take; the recording is removed too.
+- **Lessons** shows practice days and the notes you saved since your last lesson, so they are ready when you sit down with Nicolette.
+
 ## Pitch screen
 
 Tap the tuning fork on the Today screen. Sing and you get the note name, a sharp or flat meter, a scrolling pitch line over note lanes, and your range for the sitting (lowest and highest notes held for half a second). Use headphones if anything is playing, or the mic will hear the speaker.
@@ -99,7 +105,7 @@ VocalPractice/
   Pitch/      YIN pitch detector, live mic tracker, pitch screen
   Trello/     sign-in, read-only client, pull sync, onboarding (mapping is pure Swift, unit tested)
   Services/   audio playback, take recording, reminders
-  Views/      Today, session player, warmups, songs, lessons, settings
+  Views/      Today, session player, history, warmups, songs, lessons, settings
 Tests/        planner, pitch detector, and Trello mapping tests
 docs/SPEC.md  v1 spec and v2 candidates
 docs/SONG_PLAN.md  plan.json format shared by the plan-a-song skill and the app

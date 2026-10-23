@@ -140,11 +140,13 @@ struct PitchSmoother {
 /// Tracks the lowest and highest notes held cleanly for a minimum duration.
 /// This is the range test: a note only counts if you sustain it, not if you scrape past it.
 struct RangeTracker {
-    var holdSeconds = 0.5
+    var holdSeconds: Double
     private(set) var low: Int?
     private(set) var high: Int?
     private var current: Int?
     private var heldSince: Double?
+
+    init(holdSeconds: Double = 0.5) { self.holdSeconds = holdSeconds }
 
     mutating func update(midi: Double?, time: Double) {
         guard let midi else { current = nil; heldSince = nil; return }

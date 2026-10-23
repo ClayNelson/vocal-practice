@@ -49,7 +49,7 @@ VocalPractice/
   Pitch/      YIN detector, live tracker, pitch screen
   Trello/     sign-in, read-only client, pull sync, onboarding views
   Services/   audio playback, take recording, reminders
-  Views/      Today, session player, warmups, songs, lessons, settings
+  Views/      Today, session player, history, warmups, songs, lessons, settings
   Plans/      (M1) SongPlan format, validator, offline planner, plan store
   AI/         (M2) ClaudePlanner and prompt
 Tests/        unit tests for the pure layers
