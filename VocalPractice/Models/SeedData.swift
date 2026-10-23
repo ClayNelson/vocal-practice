@@ -3,6 +3,7 @@ import SwiftData
 
 /// First-launch content from Nicolette's Trello board, her Aug 14 email, and MyOps.
 /// Tracks are not bundled; Trello sync downloads them, or import an m4a from the Warmups screen.
+@MainActor
 enum SeedData {
     /// Warmups that are a video link rather than a recording.
     static let bundledLinks: [String: String] = [
@@ -43,6 +44,7 @@ enum SeedData {
         prettyWoman.notes = "Showcase, late Jan 2027. Lock key (A, Ab, or G) by Nov 8. See docs/examples/showcase-oh-pretty-woman.md"
         songs.forEach { context.insert($0) }
         context.insert(prettyWoman)
+        try? PlanStore.apply(SamplePlans.prettyWoman, to: prettyWoman, in: context)
 
         let lessons: [(String, Int, Bool)] = [("2026-08-19", 1, false), ("2026-08-26", 2, false),
                                               ("2026-09-03", 3, false), ("2026-09-11", 0, true)]

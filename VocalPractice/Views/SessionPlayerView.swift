@@ -96,7 +96,7 @@ struct SessionPlayerView: View {
 
     @ViewBuilder
     private func details(for item: PlanItem) -> some View {
-        if case .song(let s) = item, let song = songs.first(where: { $0.id == s.id }) {
+        if case .song(let s, _) = item, let song = songs.first(where: { $0.id == s.id }) {
             VStack(spacing: 8) {
                 if !song.key.isEmpty { Text("Key: \(song.key)").font(.headline) }
                 if !song.notes.isEmpty { Text(song.notes).foregroundStyle(.secondary) }
