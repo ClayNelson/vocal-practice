@@ -72,8 +72,15 @@ struct TodayView: View {
             }
             .navigationTitle("Today")
             .toolbar {
-                NavigationLink { SessionHistoryView() } label: { Image(systemName: "clock.arrow.circlepath") }
-                    .accessibilityLabel("Session history")
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { PitchView() } label: {
+                        Label("Pitch", systemImage: "tuningfork")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { SessionHistoryView() } label: { Image(systemName: "clock.arrow.circlepath") }
+                        .accessibilityLabel("Session history")
+                }
             }
             .safeAreaInset(edge: .bottom) {
                 Button { activePlan = IdentifiedPlan(plan: plan) } label: {

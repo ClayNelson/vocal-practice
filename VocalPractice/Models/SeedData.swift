@@ -2,21 +2,8 @@ import Foundation
 import SwiftData
 
 /// First-launch content from Nicolette's Trello board, her Aug 14 email, and MyOps.
-/// Her warmup recordings ship in the bundle (Resources/Warmups) and are copied into the
-/// app's Warmups folder on launch, so every warmup has its track without a Files import.
+/// Tracks are not bundled; Trello sync downloads them, or import an m4a from the Warmups screen.
 enum SeedData {
-    /// Bundled m4a resource names keyed by warmup title.
-    static let bundledTracks: [String: String] = [
-        "Precursor to breath fire starters": "vp-precursor-to-breath-fire-starters",
-        "Breath fire starter to 125": "vp-breath-fire-starter-to-125",
-        "Breath fire starter to 150": "vp-breath-fire-starter-to-150",
-        "BFS to 175": "vp-bfs-to-175",
-        "Breath fire starter to F consonant": "vp-breath-fire-starter-to-f-consonant",
-        "Somewhere Over the Rainbow octave jumps": "vp-somewhere-over-the-rainbow-octave-jumps",
-        "Waltz of the Flowers": "vp-waltz-of-the-flowers",
-        "Vegas Road Rage": "vp-vegas-road-rage",
-    ]
-
     /// Warmups that are a video link rather than a recording.
     static let bundledLinks: [String: String] = [
         "Super Mario x Inspector Gadget mashup": "https://youtube.com/watch?v=35ge5wu-EB0",
@@ -25,7 +12,7 @@ enum SeedData {
     static func seedIfEmpty(_ context: ModelContext) {
         let count = (try? context.fetchCount(FetchDescriptor<Warmup>())) ?? 0
         if count == 0 { insertStarterContent(context) }
-        attachBundledTracks(context)
+        attachLinks(context)
     }
 
     private static func insertStarterContent(_ context: ModelContext) {
@@ -48,7 +35,14 @@ enum SeedData {
             Song(title: "There Ain't No Good Chain Gang", artist: "Johnny Cash & Waylon Jennings", myOpsPath: "songs/covers"),
             Song(title: "Cadillac's Daughter", artist: "Clay Nelson", status: .seam),
         ]
+        let prettyWoman = Song(title: "Oh, Pretty Woman", artist: "Roy Orbison",
+                               myOpsPath: "songs/covers/oh-pretty-woman-roy-orbison")
+        prettyWoman.key = "A"
+        prettyWoman.minutes = 6
+        prettyWoman.showcase = true
+        prettyWoman.notes = "Showcase, late Jan 2027. Lock key (A, Ab, or G) by Nov 8. See docs/examples/showcase-oh-pretty-woman.md"
         songs.forEach { context.insert($0) }
+        context.insert(prettyWoman)
 
         let lessons: [(String, Int, Bool)] = [("2026-08-19", 1, false), ("2026-08-26", 2, false),
                                               ("2026-09-03", 3, false), ("2026-09-11", 0, true)]
@@ -64,24 +58,12 @@ enum SeedData {
         try? context.save()
     }
 
-    /// Copies bundled recordings into the Warmups folder for any warmup still missing audio,
-    /// and fills in video links. Runs every launch so existing installs pick up new bundles.
-    static func attachBundledTracks(_ context: ModelContext) {
+    /// Fills in video links for warmups that are a YouTube video rather than a recording.
+    static func attachLinks(_ context: ModelContext) {
         guard let warmups = try? context.fetch(FetchDescriptor<Warmup>()) else { return }
         var changed = false
-        for warmup in warmups {
-            if warmup.audioFileName == nil,
-               let resource = bundledTracks[warmup.title],
-               let source = Bundle.main.url(forResource: resource, withExtension: "m4a") {
-                let name = "\(resource).m4a"
-                let dest = AudioStorage.warmups.appending(path: name)
-                if FileManager.default.fileExists(atPath: dest.path)
-                    || (try? FileManager.default.copyItem(at: source, to: dest)) != nil {
-                    warmup.audioFileName = name
-                    changed = true
-                }
-            }
-            if warmup.linkURL == nil, let link = bundledLinks[warmup.title] {
+        for warmup in warmups where warmup.linkURL == nil {
+            if let link = bundledLinks[warmup.title] {
                 warmup.linkURL = link
                 changed = true
             }

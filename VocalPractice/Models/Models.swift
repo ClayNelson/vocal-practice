@@ -16,6 +16,10 @@ final class Warmup {
     var lastPracticed: Date?
     var source: String = ""
     var createdAt: Date = Date()
+    /// Set when the warmup comes from (or was matched to) a Trello card; sync updates by this ID.
+    var trelloCardID: String?
+    /// The Trello attachment the current track was downloaded from, so unchanged tracks are not re-downloaded.
+    var trelloAttachmentID: String?
 
     init(title: String, ladderGroup: String? = nil, ladderLevel: Int = 0, minutes: Int = 4,
          source: String = "", linkURL: String? = nil) {

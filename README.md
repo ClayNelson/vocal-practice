@@ -18,14 +18,63 @@ open VocalPractice.xcodeproj
 
 In Xcode, pick your Team under Signing & Capabilities for the VocalPractice target, choose your iPhone, and press Run. Run the planner tests with Cmd+U.
 
-`xcodegen generate` writes `VocalPractice.xcodeproj` and `VocalPractice/Info.plist`; both are generated and ignored by git. Re-run it after adding or removing source files.
+## TestFlight
+
+Builds go to TestFlight from GitHub Actions on a Mac runner, so no Mac is needed to ship a build. Run it from the Actions tab or the GitHub mobile app: **Actions, TestFlight, Run workflow**. Each run tests, archives, signs, and uploads; the build number is the run number.
+
+One-time setup:
+
+1. **App Store Connect, Apps, +, New App.** Platform iOS, bundle ID `app.haklo.vocalpractice` (register it under Certificates, Identifiers & Profiles first if it isn't in the list). App names are unique across the store, so use something like "Vocal Practice Clay"; the home-screen name stays "Vocal Practice".
+2. **Users and Access, Integrations, App Store Connect API, +.** Role **Admin** (needed for cloud-managed signing). Download the .p8 once and note the Key ID and Issuer ID.
+3. **Repo secrets** (Settings, Secrets and variables, Actions):
+   - `APPLE_TEAM_ID`: 10-character team ID from developer.apple.com, Membership
+   - `ASC_KEY_ID`: the API key's ID
+   - `ASC_ISSUER_ID`: the issuer ID above the key list
+   - `ASC_KEY_P8`: the full text of the .p8 file, including the BEGIN and END lines
+4. **TestFlight tab:** add yourself as an internal tester. For friends, create an external group and add their emails; the first external build gets a short Apple beta review.
 
 ## First launch
 
-The app seeds itself with Nicolette's warmups (from the Trello board and her Aug 14 email), your current covers, and your lesson history. Her eight warmup recordings ship inside the app (`VocalPractice/Resources/Warmups`) and are attached to the matching warmups on launch, so nothing needs importing. The Super Mario x Inspector Gadget mashup is a YouTube video on Trello, not a recording; the app links to it instead.
+A welcome screen asks to connect Trello:
 
-1. In **Settings**, set practice days and reminder time, then tap Save reminders.
-2. To add a new warmup Nicolette sends later, tap + on the **Warmups** tab, then open it and tap Import track from Files. Or drop the m4a into `Resources/Warmups` and add it to `SeedData.bundledTracks` so every install gets it.
+1. **Connect Trello.** Sign in to the Trello account the lesson board is shared with, and allow read access.
+2. **Pick the board.** The app picks the lesson board, the Warmups list, and the lesson package card when it can; change any of them in Settings.
+3. **Done.** It syncs once. Warmups and their tracks fill in, along with the lesson history.
+
+"Skip for now" starts empty. To demo with Clay's content, use **Settings, Sample content**.
+
+Then in **Settings**, set practice days and reminder time, and tap Save reminders.
+
+## Trello sync
+
+Pull-only: the app reads the board and never changes it.
+
+| On the board | In the app |
+| --- | --- |
+| Each card in the Warmups list | A warmup. Title follows the card. "BFS to 200" style names become ladder rungs. |
+| The card's uploaded audio file | The warmup's track, downloaded once and again only if the attachment changes |
+| Package card lines like `4. 10/16`, plus "Gifted" lines | Lesson history; "30 Classes" sets the package size |
+
+**When it syncs:**
+- On launch, if the last sync was more than 6 hours ago
+- When you pull to refresh on the Warmups tab
+- When you tap **Sync now** in Settings
+
+**What it leaves alone:**
+- Solid flags, practice history, and takes are never touched.
+- Nothing is deleted. A warmup whose card is archived stays until you remove it.
+- Warmups added by hand keep their place. On first sync, a seeded warmup with a matching title is adopted, not duplicated.
+
+Each person signs in with their own Trello account and gets a read-only token, stored in the iPhone Keychain. That's what lets Nicolette's students use their own boards.
+
+### One-time setup (Clay)
+
+1. **Create the API key.** Go to https://trello.com/apps/admin, create a Power-Up named "Vocal Practice" in your workspace, open its **Trello Auth** tab, and choose **Generate a new API key**. The key identifies the app, not a person. Do not use or share the secret.
+2. **Add the repo secret** `TRELLO_API_KEY` with that key. Builds without it have sync turned off and show a warning in the Actions log.
+3. **Choose a sign-in style:**
+   - **Paste token (works now, no hosting):** do nothing more. Connect opens Trello in Safari; after tapping Allow, Trello shows a token to copy and paste back into the app.
+   - **One tap (recommended before sharing):** host `web/trello-callback.html` on an https site you control (GitHub Pages, Vercel, or similar). Add that site's origin, for example `https://yourname.github.io`, under **Allowed origins** on the Power-Up's Trello Auth tab. Then set the repo **variable** (not secret) `TRELLO_RETURN_URL` to the full page URL. Sign-in then returns to the app automatically.
+4. **Run the TestFlight workflow.**
 
 ## How a session is built
 
@@ -40,6 +89,12 @@ The app seeds itself with Nicolette's warmups (from the Trello board and her Aug
 - **Warmups** and **Songs** detail screens list the takes recorded for that item, newest first, so you can play an old take against a new one. Swipe to delete a take; the recording is removed too.
 - **Lessons** shows practice days and the notes you saved since your last lesson, so they are ready when you sit down with Nicolette.
 
+## Pitch screen
+
+Tap the tuning fork on the Today screen. Sing and you get the note name, a sharp or flat meter, a scrolling pitch line over note lanes, and your range for the sitting (lowest and highest notes held for half a second). Use headphones if anything is playing, or the mic will hear the speaker.
+
+The detector is YIN running on the live mic (`Pitch/PitchDetector.swift`), about 50 readings a second, with no network or account. It is the base for native exercises that will replace the Singing Carrots web step.
+
 ## Layout
 
 ```
@@ -47,13 +102,18 @@ VocalPractice/
   App/        app entry, tabs, settings keys
   Planner/    SessionPlanner and WeeklyProgress (pure Swift, unit tested)
   Models/     SwiftData models and first-launch seed data
-  Resources/  Nicolette's warmup recordings (bundled m4a)
+  Pitch/      YIN pitch detector, live mic tracker, pitch screen
+  Trello/     sign-in, read-only client, pull sync, onboarding (mapping is pure Swift, unit tested)
   Services/   audio playback, take recording, reminders
   Views/      Today, session player, history, warmups, songs, lessons, settings
-Tests/        planner tests
+Tests/        planner, pitch detector, and Trello mapping tests
 docs/SPEC.md  v1 spec and v2 candidates
+docs/SONG_PLAN.md  plan.json format shared by the plan-a-song skill and the app
+docs/IMPLEMENTATION_PLAN.md  next build (M0 CI, M1 song plans, M2 Claude), for Claude Code
+tools/        validate_plan.py for plan.json files
+web/          Trello sign-in relay page (host it for one-tap sign-in)
 ```
 
 ## Not yet built (v2)
 
-Pitch and range tracking, lesson recording and transcription, pre-lesson brief, showcase countdown, key fitting, lyric memorization, MyOps and Trello sync, Siri shortcut.
+Range history across sessions, native pitch exercises, lesson recording and transcription, pre-lesson brief, showcase countdown, key fitting, lyric memorization, MyOps sync, Siri shortcut.

@@ -9,6 +9,7 @@ struct WarmupsView: View {
     @Query(sort: \Warmup.title) private var warmups: [Warmup]
     @State private var importTarget: Warmup?
     @State private var showingAdd = false
+    @State private var syncMessage: String?
 
     private var ladders: [String: [Warmup]] {
         Dictionary(grouping: warmups.filter { $0.ladderGroup != nil }, by: { $0.ladderGroup! })
@@ -33,6 +34,12 @@ struct WarmupsView: View {
             }
             .navigationTitle("Warmups")
             .navigationDestination(for: Warmup.self) { WarmupDetailView(warmup: $0) }
+            .refreshable { await syncFromTrello() }
+            .safeAreaInset(edge: .bottom) {
+                if let syncMessage {
+                    Text(syncMessage).font(.footnote).foregroundStyle(.secondary).padding(.bottom, 8)
+                }
+            }
             .toolbar { Button { showingAdd = true } label: { Image(systemName: "plus") } }
             .fileImporter(isPresented: Binding(get: { importTarget != nil }, set: { if !$0 { importTarget = nil } }),
                           allowedContentTypes: [.audio]) { result in
@@ -42,6 +49,16 @@ struct WarmupsView: View {
                 importTarget = nil
             }
             .sheet(isPresented: $showingAdd) { AddWarmupSheet() }
+        }
+    }
+
+    /// Pull to refresh: sync from Trello when connected; otherwise a no-op.
+    private func syncFromTrello() async {
+        guard TrelloSync.isConnected else { return }
+        do {
+            syncMessage = try await TrelloSync.run(context: context).summary
+        } catch {
+            syncMessage = error.localizedDescription
         }
     }
 
@@ -325,6 +342,7 @@ struct LessonDetailView: View {
 // MARK: Settings
 
 struct SettingsView: View {
+    @Environment(\.modelContext) private var context
     @AppStorage(Prefs.daysPerWeek) private var daysPerWeek = 4
     @AppStorage(Prefs.reminderHour) private var hour = 18
     @AppStorage(Prefs.reminderMinute) private var minute = 30
@@ -360,6 +378,19 @@ struct SettingsView: View {
 
                 Section("Lessons") {
                     Stepper("Package: \(packageSize) lessons", value: $packageSize, in: 1...100)
+                }
+
+                TrelloSections()
+
+                Section {
+                    Button("Load Clay's starter set") {
+                        SeedData.seedIfEmpty(context)
+                        status = "Starter set loaded (only adds content when no warmups exist yet)."
+                    }
+                } header: {
+                    Text("Sample content")
+                } footer: {
+                    Text("For demos: Clay's warmup names, songs, and lesson history. Skipped if you already have warmups.")
                 }
             }
             .navigationTitle("Settings")

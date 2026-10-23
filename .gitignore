@@ -7,4 +7,3 @@ build/
 .DS_Store
 *.m4a
 VocalPractice/Info.plist
-!VocalPractice/Resources/Warmups/*.m4a
