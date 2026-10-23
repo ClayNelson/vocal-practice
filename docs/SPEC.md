@@ -105,6 +105,10 @@ Added October 23, 2026 so Nicolette can hand the app (via TestFlight) to her stu
 - Clay's seed content no longer loads automatically; it is under Settings, Sample content.
 - Details and setup: README, Trello sync.
 
+## Plan a song (decided, not built)
+
+In-app song planning: offline planner first (free, doubles as showcase mode), AI research on top with an Anthropic key entered in Settings, provider pluggable for a studio backend later. See [PLAN_A_SONG.md](PLAN_A_SONG.md).
+
 ## V2 candidates
 
 Worked example that prioritizes these: [Oh, Pretty Woman to the January showcase](examples/showcase-oh-pretty-woman.md).
