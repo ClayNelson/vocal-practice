@@ -102,6 +102,8 @@ VocalPractice/
   Views/      Today, session player, warmups, songs, lessons, settings
 Tests/        planner, pitch detector, and Trello mapping tests
 docs/SPEC.md  v1 spec and v2 candidates
+docs/SONG_PLAN.md  plan.json format shared by the plan-a-song skill and the app
+tools/        validate_plan.py for plan.json files
 web/          Trello sign-in relay page (host it for one-tap sign-in)
 ```
 
