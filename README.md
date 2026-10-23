@@ -80,7 +80,7 @@ Each person signs in with their own Trello account and gets a read-only token, s
 
 - Length follows the studio policy: 3 days a week = 60 min, 4 = 45, 5 = 30 (changeable on the Today screen).
 - First half warmups. Ladders (Breath fire starter 125, 150, 175) schedule only the current rung: the lowest one not yet marked solid. Other warmups rotate, least recently practiced first.
-- Second half songs in Learning, Polishing, or Performance ready: showcase songs first, then Learning, then least recently practiced.
+- Second half songs in Learning, Polishing, or Performance ready: songs with an active plan first (nearest goal first), then showcase songs, then Learning, then least recently practiced. A planned song follows its current phase (see Song plans).
 - A rough or tired voice check-in halves the song block and drops ladders one rung.
 
 ## Reviewing progress
@@ -88,6 +88,23 @@ Each person signs in with their own Trello account and gets a read-only token, s
 - **Today** has a clock button that opens session history: date, voice condition, what got done, notes, and every take from that session.
 - **Warmups** and **Songs** detail screens list the takes recorded for that item, newest first, so you can play an old take against a new one. Swipe to delete a take; the recording is removed too.
 - **Lessons** shows practice days and the notes you saved since your last lesson, so they are ready when you sit down with Nicolette.
+
+## Song plans
+
+A plan works a song toward a dated goal, like a showcase. It has phases (listen, sections, full runs, maintenance, taper), the hard sections worth isolating, and dated checkpoints such as "Lock key". The format is `plan.json`, described in `docs/SONG_PLAN.md`.
+
+- **Make a plan:** on a song's screen, tap **Make a plan**. Enter the goal date, key, range, and sections, plus any days off. The phases preview before you save. No network needed.
+- **Import a plan:** tap the import button on the **Songs** tab and pick a `plan.json` from Files. It attaches to the song with the same title and artist, or creates the song. Importing over a plan replaces it but keeps section ratings that match by id.
+- **Export a plan:** **Export plan** on the song's screen shares `<song>.plan.json`, with checkpoint done states included. Drop it back in the song's MyOps folder.
+- **The plan-a-song skill:** Clay's Claude skill writes `plan.json` into `songs/covers/<song>/` in MyOps. Import that file to use it.
+
+Once a plan is active:
+
+- **Today** shows a goal card: countdown, current phase, and the next checkpoint (orange when overdue). Song rows show the mode: Listen, Section: Top phrases, Full run, or Taper run.
+- **Section takes:** after a take on a section, the player asks how it felt (Free, Pressed, Cracked). The next session works the hardest unresolved section: cracked, then pressed, then never practiced, then the oldest.
+- **Maintenance** phases schedule a full run on up to 3 days a week. **Taper** skips the song on a rough voice.
+
+Validate a file on a Mac with `python3 tools/validate_plan.py path/to/plan.json`.
 
 ## Pitch screen
 
@@ -101,12 +118,13 @@ The detector is YIN running on the live mic (`Pitch/PitchDetector.swift`), about
 VocalPractice/
   App/        app entry, tabs, settings keys
   Planner/    SessionPlanner and WeeklyProgress (pure Swift, unit tested)
-  Models/     SwiftData models and first-launch seed data
+  Models/     SwiftData models, PlanStore, sample seed data
+  Plans/      SongPlan format, validator, offline planner (pure Swift, unit tested)
   Pitch/      YIN pitch detector, live mic tracker, pitch screen
   Trello/     sign-in, read-only client, pull sync, onboarding (mapping is pure Swift, unit tested)
   Services/   audio playback, take recording, reminders
   Views/      Today, session player, history, warmups, songs, lessons, settings
-Tests/        planner, pitch detector, and Trello mapping tests
+Tests/        planner, song plan, offline planner, pitch detector, and Trello mapping tests
 docs/SPEC.md  v1 spec and v2 candidates
 docs/SONG_PLAN.md  plan.json format shared by the plan-a-song skill and the app
 docs/IMPLEMENTATION_PLAN.md  next build (M0 CI, M1 song plans, M2 Claude), for Claude Code

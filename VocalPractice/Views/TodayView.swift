@@ -19,8 +19,21 @@ struct TodayView: View {
     private var plan: SessionPlan {
         SessionPlanner.plan(minutes: sessionMinutes,
                             warmups: warmups.map(\.snapshot),
-                            songs: songs.map(\.snapshot),
+                            songs: songs.map { $0.snapshot(on: .now, fullRunsThisWeek: fullRunsThisWeek($0)) },
                             voiceCondition: voiceCondition)
+    }
+
+    /// Days this week the song was completed in a session; caps maintenance at 3 full runs.
+    private func fullRunsThisWeek(_ song: Song) -> Int {
+        WeeklyProgress.daysPracticed(sessionDates: sessions.filter { $0.completedItemIDs.contains(song.id) }.map(\.date))
+    }
+
+    /// The song whose goal is soonest, among plans not yet past their goal.
+    private var activeGoal: (song: Song, plan: SongPlan)? {
+        let today = PlanDate.today()
+        return songs.compactMap { song in PlanStore.currentPlan(for: song).map { (song: song, plan: $0) } }
+            .filter { $0.plan.goal.date >= today }
+            .min { $0.plan.goal.date < $1.plan.goal.date }
     }
 
     var body: some View {
@@ -40,6 +53,10 @@ struct TodayView: View {
                         }
                     }
                     .padding(.vertical, 8)
+                }
+
+                if let goal = activeGoal {
+                    Section { GoalCard(song: goal.song, plan: goal.plan, today: .today()) }
                 }
 
                 Section("How's your voice?") {
@@ -110,7 +127,12 @@ struct PlanRow: View {
     var body: some View {
         HStack {
             Image(systemName: icon).foregroundStyle(.indigo).frame(width: 24)
-            Text(item.title)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title)
+                if let mode = item.songMode?.label {
+                    Text(mode).font(.caption).foregroundStyle(.secondary)
+                }
+            }
             Spacer()
             Text("\(item.minutes) min").foregroundStyle(.secondary).monospacedDigit()
         }
