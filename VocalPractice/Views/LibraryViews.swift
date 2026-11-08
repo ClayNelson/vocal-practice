@@ -279,6 +279,7 @@ struct LessonsView: View {
     var body: some View {
         NavigationStack {
             List {
+                StudioLogoHeader()
                 Section("Package") {
                     LabeledContent("Lessons used", value: "\(used) of \(packageSize)")
                     LabeledContent("Remaining", value: "\(max(0, packageSize - used))")
@@ -420,5 +421,22 @@ struct SettingsView: View {
         await ReminderScheduler.schedule(weekdays: days, hour: hour, minute: minute,
                                          minutes: SessionPlanner.defaultMinutes(daysPerWeek: daysPerWeek))
         status = "Reminders set for \(days.count) days a week."
+    }
+}
+
+/// Nicolette's studio mark, centered above a list. Template image, so it follows light and dark mode.
+struct StudioLogoHeader: View {
+    var body: some View {
+        Image("StudioLogo")
+            .resizable()
+            .interpolation(.high)
+            .scaledToFit()
+            .frame(width: 240)
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .accessibilityLabel("Mesmerize Studio")
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 0, trailing: 0))
     }
 }
