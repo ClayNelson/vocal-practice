@@ -130,6 +130,11 @@ struct SessionPlayerView: View {
                         .frame(maxHeight: 220).padding(.horizontal)
                 }
             }
+        } else if case .warmup(let w) = item, let notes = warmupModel(w.id)?.boardNotes, !notes.isEmpty {
+            VStack(spacing: 8) {
+                Text(notes).font(.headline).multilineTextAlignment(.center).padding(.horizontal)
+                Text("\(item.minutes) min").foregroundStyle(.secondary)
+            }
         } else {
             Text("\(item.minutes) min").foregroundStyle(.secondary)
         }

@@ -6,7 +6,8 @@ import UniformTypeIdentifiers
 
 struct WarmupsView: View {
     @Environment(\.modelContext) private var context
-    @Query(sort: \Warmup.title) private var warmups: [Warmup]
+    @Query(filter: #Predicate<Warmup> { !$0.isHidden }, sort: \Warmup.title) private var warmups: [Warmup]
+    @AppStorage(Prefs.trelloRoutines) private var routinesData = Data()
     @State private var importTarget: Warmup?
     @State private var showingAdd = false
     @State private var syncMessage: String?
@@ -19,6 +20,21 @@ struct WarmupsView: View {
     var body: some View {
         NavigationStack {
             List {
+                let routines = routinesData.decoded([BoardMapping.Routine].self) ?? []
+                if !routines.isEmpty {
+                    Section("Routines from your board") {
+                        ForEach(routines) { routine in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(routine.name)
+                                Text(routineSummary(routine)).font(.caption).foregroundStyle(.secondary)
+                                if !routine.missing.isEmpty {
+                                    Text("Not found on the board: \(routine.missing.joined(separator: ", "))")
+                                        .font(.caption).foregroundStyle(.orange)
+                                }
+                            }
+                        }
+                    }
+                }
                 ForEach(ladders.keys.sorted(), id: \.self) { group in
                     Section("\(group) ladder") {
                         ForEach(ladders[group]!) { row($0, isCurrent: $0.id == currentRung(group)?.id) }
@@ -60,6 +76,13 @@ struct WarmupsView: View {
         } catch {
             syncMessage = error.localizedDescription
         }
+    }
+
+    /// "BFS to 300 or Snake, Super Mario, ..." from the routine's cards.
+    private func routineSummary(_ routine: BoardMapping.Routine) -> String {
+        let titles = Dictionary(warmups.compactMap { w in w.trelloCardID.map { ($0, w.title) } }, uniquingKeysWith: { a, _ in a })
+        return routine.slots.map { $0.compactMap { titles[$0] }.joined(separator: " or ") }
+            .filter { !$0.isEmpty }.joined(separator: ", ")
     }
 
     private func currentRung(_ group: String) -> Warmup? {
@@ -119,7 +142,10 @@ struct WarmupDetailView: View {
                 }
                 if !warmup.source.isEmpty { LabeledContent("Source", value: warmup.source) }
             }
-            Section("Nicolette's track") {
+            if !warmup.boardNotes.isEmpty {
+                Section("Notes from your board") { Text(warmup.boardNotes) }
+            }
+            Section("Track") {
                 if let link = warmup.linkURL.flatMap(URL.init) {
                     Link(destination: link) { Label("Watch on YouTube", systemImage: "play.rectangle") }
                 }
@@ -291,7 +317,7 @@ struct LessonsView: View {
 
     private var used: Int { lessons.filter { !$0.isGifted }.count }
     private var sinceLastLesson: [PracticeSession] {
-        PracticeReview.sinceLastLesson(sessions, date: \.date, lastLesson: lessons.first?.date)
+        PracticeReview.sinceLastLesson(sessions, date: \.date, lastLesson: lessons.first(where: { !$0.wasCanceled })?.date)
     }
     private var daysSinceLastLesson: Int {
         Set(sinceLastLesson.map { Calendar.current.startOfDay(for: $0.date) }).count
@@ -326,7 +352,8 @@ struct LessonsView: View {
                             LessonDetailView(lesson: lesson)
                         } label: {
                             VStack(alignment: .leading) {
-                                Text(lesson.isGifted ? "Gifted lesson" : "Lesson \(lesson.number)")
+                                Text(lesson.isGifted ? "Gifted lesson"
+                                     : lesson.wasCanceled ? "Lesson \(lesson.number), canceled" : "Lesson \(lesson.number)")
                                 Text(lesson.date.formatted(date: .abbreviated, time: .omitted))
                                     .font(.caption).foregroundStyle(.secondary)
                             }

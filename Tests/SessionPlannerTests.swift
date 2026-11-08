@@ -174,6 +174,50 @@ final class SessionPlannerTests: XCTestCase {
         XCTAssertEqual(songPlan([song]).songs, [.song(song, .normal)])
         XCTAssertEqual(songPlan([song]).songs, [.song(song)])
     }
+
+    // MARK: Routines
+
+    private func routineWarmups() -> [WarmupSnapshot] {
+        let old = Date(timeIntervalSince1970: 1_000), older = Date(timeIntervalSince1970: 500)
+        return [
+            WarmupSnapshot(title: "BFS to 200", ladderGroup: "BFS", ladderLevel: 200, minutes: 4, lastPracticed: older),
+            WarmupSnapshot(title: "BFS to 300", ladderGroup: "BFS", ladderLevel: 300, minutes: 4, lastPracticed: old),
+            WarmupSnapshot(title: "Snake", minutes: 3, lastPracticed: older),
+            WarmupSnapshot(title: "Super Mario", minutes: 3),
+            WarmupSnapshot(title: "Vegas", minutes: 4, lastPracticed: old),
+            WarmupSnapshot(title: "Rainbow", minutes: 4),
+        ]
+    }
+
+    func testRoutineSetsOrderAndPicksTheStalerAlternative() {
+        let w = routineWarmups()
+        let routine = [[w[1].id, w[2].id], [w[3].id], [w[4].id]]
+        let plan = SessionPlanner.plan(minutes: 60, warmups: w, songs: [], routine: routine)
+        XCTAssertEqual(plan.warmups.map(\.title), ["Snake", "Super Mario", "Vegas"], "Snake was practiced longer ago than BFS to 300")
+    }
+
+    func testRoutineStepsLadderDownOnRoughVoice() {
+        let w = routineWarmups()
+        let plan = SessionPlanner.plan(minutes: 60, warmups: w, songs: [], voiceCondition: 1, routine: [[w[1].id], [w[3].id]])
+        XCTAssertEqual(plan.warmups.map(\.title), ["BFS to 200", "Super Mario"])
+    }
+
+    func testLongRoutineRotatesLeastRecentButKeepsOrder() {
+        let w = routineWarmups()
+        // 30-minute session: 15 warmup minutes, but the routine needs 18.
+        let routine = [[w[1].id], [w[3].id], [w[4].id], [w[5].id], [w[2].id]]
+        let plan = SessionPlanner.plan(minutes: 30, warmups: w, songs: [], routine: routine)
+        XCTAssertEqual(plan.warmups.reduce(0) { $0 + $1.minutes }, 14)
+        XCTAssertEqual(plan.warmups.map(\.title), ["BFS to 300", "Super Mario", "Rainbow", "Snake"],
+                       "Never practiced first, then oldest, until full (Vegas waits); shown in routine order")
+    }
+
+    func testEmptyRoutineFallsBackToRotation() {
+        let w = routineWarmups()
+        let withMissing = SessionPlanner.plan(minutes: 60, warmups: w, songs: [], routine: [[UUID()]])
+        let without = SessionPlanner.plan(minutes: 60, warmups: w, songs: [])
+        XCTAssertEqual(withMissing.warmups, without.warmups)
+    }
 }
 
 private extension SongSnapshot {

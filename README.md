@@ -49,14 +49,24 @@ Then in **Settings**, set practice days and reminder time, and tap Save reminder
 
 Pull-only: the app reads the board and never changes it.
 
+The app reads the whole board you pick, so it works with any teacher's layout.
+
 | On the board | In the app |
 | --- | --- |
-| Each card in the Warmups list | A warmup. Title follows the card. "BFS to 200" style names become ladder rungs. |
+| A card with a track or a link, or in a list of tracks | A warmup. Title follows the card. "BFS to 200" style names become ladder rungs. A card copied into a second list stays one warmup. |
+| The card's description | Notes shown under the title while it plays, like "BUBBLES > ROLLS > VOWELS". A YouTube link opens the video. |
 | The card's uploaded audio file | The warmup's track, downloaded once and again only if the attachment changes |
-| Package card lines like `4. 10/16`, plus "Gifted" lines | Lesson history; "30 Classes" sets the package size |
+| A card that numbers a set, like "Thrive with Five: 1. BFS to 300 OR Snake ..." | A routine, in that order. "X OR Y" alternates. Lines that match no card are shown as not found. |
+| A list of warmups that no numbered card names | A routine with the list's cards in order |
+| Package card lines like `4. 10/16`, "Gifted" lines, and "cancel" notes | Lesson history; "30 Classes" sets the package size. A canceled lesson counts against the package but isn't your last lesson. |
+
+**Routines on Today:** pick one under Warmup routine, or leave it on Automatic: the shortest numbered routine, or the longest one for a 60-minute session. When a routine doesn't fit the time, the least recently practiced items play, still in the teacher's order, so it rotates over the week. A plain board with no numbered cards keeps the old rotation.
+
+**What's new:** each sync reads the board's history since the last one. The teacher's edits show on Today as "New from Nicolette" (added cards, new tracks, moved cards, note edits, comments), with a badge on the Today tab and a New tag on changed warmups, until you tap Got it. Your own edits are left out. Turn on **Notify me when the board changes** in Settings for a notification when a background check finds something. iOS decides when that runs, usually a few times a day.
 
 **When it syncs:**
-- On launch, if the last sync was more than 6 hours ago
+- On launch, if the last sync was more than an hour ago
+- In the background, a few times a day
 - When you pull to refresh on the Warmups tab
 - When you tap **Sync now** in Settings
 

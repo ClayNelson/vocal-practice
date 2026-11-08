@@ -124,13 +124,15 @@ Every warmup item has a source type, so the queue never depends on where an exer
   - The token lives in the Keychain.
   - The app's Power-Up API key is set at build time from the `TRELLO_API_KEY` repo secret.
   - Sign-in returns through a hosted relay page (`web/trello-callback.html`, set with the `TRELLO_RETURN_URL` repo variable). Without one, the user pastes the token Trello shows.
-- **Onboarding:** picks the lesson board, the Warmups list, and the lesson package card. All three can be changed in Settings.
-- **Sync** is pull-only:
-  - Cards become warmups; ladder rungs are parsed from names like "BFS to 200".
+- **Onboarding:** picks the lesson board and the lesson package card. Both can be changed in Settings.
+- **Sync** is pull-only and reads the whole board:
+  - Cards with a track or a link (or in a list of tracks) become warmups; ladder rungs are parsed from names like "BFS to 200". Descriptions become practice notes.
+  - Numbered summary cards ("Thrive with Five", "The Dirty Dozen") become routines; other lists of warmups become routines in card order. Today plans the warmup half from the chosen routine.
+  - The board's history since the last sync becomes "New from your teacher" on Today, with an optional notification from background refresh.
   - Audio attachments become tracks, re-downloaded only when the attachment changes.
   - Package card lines like "4. 10/16" become lessons, and "30 Classes" sets the package size.
   - Nothing is written to Trello, and nothing local is deleted.
-- **When it runs:** on launch when the last sync is more than 6 hours old, on pull to refresh in Warmups, and with Sync now in Settings. Only one sync runs at a time.
+- **When it runs:** on launch when the last sync is more than an hour old, in background refresh, on pull to refresh in Warmups, and with Sync now in Settings. Only one sync runs at a time.
 - **Sample content:** Clay's seed content loads only from Settings, Sample content.
 
 ## Data model

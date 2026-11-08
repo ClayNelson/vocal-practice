@@ -44,6 +44,8 @@ public enum TrelloMapping {
         public var number: Int
         public var date: Date
         public var isGifted: Bool
+        /// A numbered line marked as a cancel ("6. 10/26 <Same day cancel"). It still uses up a lesson.
+        public var isCanceled = false
     }
 
     public struct LessonPackage: Equatable, Sendable {
@@ -81,7 +83,8 @@ public enum TrelloMapping {
             guard let number = Int(digits),
                   let date = firstDate(in: String(rest), reference: reference, calendar: calendar)
             else { continue }
-            entries.append(LessonEntry(number: number, date: date, isGifted: false))
+            entries.append(LessonEntry(number: number, date: date, isGifted: false,
+                                       isCanceled: line.lowercased().contains("cancel")))
         }
         return LessonPackage(packageSize: size, lessons: entries)
     }
