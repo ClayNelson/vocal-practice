@@ -428,8 +428,13 @@ struct SettingsView: View {
 struct StudioLogoHeader: View {
     var body: some View {
         Image("StudioLogo")
+            .resizable()
+            .interpolation(.high)
+            .scaledToFit()
+            .frame(width: 240)
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
             .accessibilityLabel("Mesmerize Studio")
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 0, trailing: 0))
