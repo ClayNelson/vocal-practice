@@ -24,7 +24,8 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
-        UIBackgroundModes: [audio]
+        UIBackgroundModes: [audio, fetch]
+        BGTaskSchedulerPermittedIdentifiers: [app.haklo.vocalpractice.board-refresh]
         NSMicrophoneUsageDescription: Records a take of each warmup and song so you can hear your progress, and listens for pitch on the Pitch screen.
         ITSAppUsesNonExemptEncryption: false
         # Trello sign-in: filled from build settings below (CI passes them from repo secrets/variables).

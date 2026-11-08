@@ -154,16 +154,20 @@ public enum SessionPlanner {
     /// Builds a session: first half warmups, second half songs (studio policy).
     /// - Parameter voiceCondition: 1 (rough) to 5 (great). At 1 or 2 the song block is halved
     ///   and ladders step back one rung so the voice is not pushed.
+    /// - Parameter routine: the teacher's routine as slots of warmup ids (a slot with two ids alternates).
+    ///   When it resolves to any warmups, the warmup half follows it instead of the rotation.
     public static func plan(minutes: Int,
                             warmups: [WarmupSnapshot],
                             songs: [SongSnapshot],
-                            voiceCondition: Int = 3) -> SessionPlan {
+                            voiceCondition: Int = 3,
+                            routine: [[UUID]]? = nil) -> SessionPlan {
         let gentle = voiceCondition <= 2
         let warmupBudget = minutes / 2
         let songBudget = gentle ? (minutes - warmupBudget) / 2 : minutes - warmupBudget
 
-        let warmupItems = fill(budget: warmupBudget,
-                               from: warmupCandidates(warmups, gentle: gentle).map(PlanItem.warmup))
+        var candidates = routine.map { routineCandidates($0, warmups: warmups, gentle: gentle, budget: warmupBudget) } ?? []
+        if candidates.isEmpty { candidates = warmupCandidates(warmups, gentle: gentle) }
+        let warmupItems = fill(budget: warmupBudget, from: candidates.map(PlanItem.warmup))
         let songItems = fill(budget: songBudget,
                              from: songItems(songCandidates(songs), gentle: gentle))
         return SessionPlan(targetMinutes: minutes, warmups: warmupItems, songs: songItems)
@@ -182,6 +186,37 @@ public enum SessionPlanner {
         }
         let standalone = warmups.filter { $0.ladderGroup == nil }.sorted(by: leastRecent)
         return ladders.sorted(by: leastRecent) + standalone
+    }
+
+    /// The routine in the teacher's order. For "X OR Y" the less recently practiced one plays.
+    /// On a rough voice a ladder rung steps down to the one below it. When the whole routine won't fit,
+    /// the least recently practiced items fill the time, still shown in routine order, so it rotates over days.
+    static func routineCandidates(_ slots: [[UUID]], warmups: [WarmupSnapshot], gentle: Bool, budget: Int) -> [WarmupSnapshot] {
+        let byID = Dictionary(warmups.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        var picks: [WarmupSnapshot] = []
+        for slot in slots {
+            let choices = slot.compactMap { byID[$0] }
+            guard var pick = choices.enumerated().min(by: { a, b in
+                a.element.lastPracticed == b.element.lastPracticed ? a.offset < b.offset
+                    : leastRecent(a.element.lastPracticed, b.element.lastPracticed)
+            })?.element else { continue }
+            if gentle, let group = pick.ladderGroup {
+                let lower = warmups.filter { $0.ladderGroup == group && $0.ladderLevel < pick.ladderLevel }
+                if let stepDown = lower.max(by: { $0.ladderLevel < $1.ladderLevel }) { pick = stepDown }
+            }
+            if !picks.contains(where: { $0.id == pick.id }) { picks.append(pick) }
+        }
+        guard picks.reduce(0, { $0 + $1.minutes }) > budget else { return picks }
+        let order = Dictionary(picks.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { a, _ in a })
+        var chosen: Set<UUID> = []
+        var used = 0
+        for pick in picks.sorted(by: { a, b in
+            a.lastPracticed == b.lastPracticed ? order[a.id]! < order[b.id]! : leastRecent(a.lastPracticed, b.lastPracticed)
+        }) where used + pick.minutes <= budget || chosen.isEmpty {
+            chosen.insert(pick.id)
+            used += pick.minutes
+        }
+        return picks.filter { chosen.contains($0.id) }
     }
 
     /// Songs with an active plan first (nearest goal first), then showcase songs, then Learning,

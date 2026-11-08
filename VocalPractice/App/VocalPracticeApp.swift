@@ -16,6 +16,9 @@ struct VocalPracticeApp: App {
             RootView()
         }
         .modelContainer(container)
+        .backgroundTask(.appRefresh(BoardRefresh.taskID)) { [container] in
+            await BoardRefresh.run(container: container)
+        }
     }
 }
 
@@ -23,10 +26,17 @@ struct RootView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(Prefs.onboarded) private var onboarded = false
+    @AppStorage(Prefs.trelloChanges) private var changesData = Data()
+    @AppStorage(Prefs.trelloChangesSeen) private var changesSeen: Double = 0
+
+    private var unseenCount: Int {
+        (changesData.decoded([BoardMapping.Change].self) ?? []).filter { $0.date.timeIntervalSince1970 > changesSeen }.count
+    }
 
     var body: some View {
         TabView {
             TodayView().tabItem { Label("Today", systemImage: "music.mic") }
+                .badge(unseenCount)
             WarmupsView().tabItem { Label("Warmups", systemImage: "waveform") }
             SongsView().tabItem { Label("Songs", systemImage: "music.note.list") }
             LessonsView().tabItem { Label("Lessons", systemImage: "graduationcap") }
@@ -38,6 +48,7 @@ struct RootView: View {
         }
         // Pull new warmups and lessons when the app comes forward, at most every few hours.
         .onChange(of: scenePhase, initial: true) { _, phase in
+            if phase == .background { BoardRefresh.schedule() }
             guard phase == .active, onboarded else { return }
             Task { await TrelloSync.syncIfStale(context: context) }
         }
@@ -58,4 +69,12 @@ enum Prefs {
     static let trelloListID = "trelloListID"
     static let trelloPackageCardID = "trelloPackageCardID"
     static let trelloLastSync = "trelloLastSync"
+    static let trelloMemberID = "trelloMemberID"
+    static let trelloActivitySince = "trelloActivitySince"
+    static let trelloRoutines = "trelloRoutines"
+    static let trelloChanges = "trelloChanges"
+    static let trelloChangesSeen = "trelloChangesSeen"
+    /// The routine chosen on Today; empty means pick by session length.
+    static let routineChoice = "routineChoice"
+    static let boardNotifications = "boardNotifications"
 }

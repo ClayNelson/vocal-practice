@@ -20,6 +20,10 @@ final class Warmup {
     var trelloCardID: String?
     /// The Trello attachment the current track was downloaded from, so unchanged tracks are not re-downloaded.
     var trelloAttachmentID: String?
+    /// The teacher's notes from the card description, like "BUBBLES > ROLLS > VOWELS".
+    var boardNotes: String = ""
+    /// Hidden from lists and sessions; set for cards that turned out to be routine summaries, not exercises.
+    var isHidden: Bool = false
 
     init(title: String, ladderGroup: String? = nil, ladderLevel: Int = 0, minutes: Int = 4,
          source: String = "", linkURL: String? = nil) {
@@ -174,6 +178,8 @@ final class Lesson {
     var number: Int = 0
     var notes: String = ""
     var isGifted: Bool = false
+    /// Marked as a cancel on the package card. It uses up a lesson but isn't the last lesson you had.
+    var wasCanceled: Bool = false
 
     init(date: Date, number: Int, notes: String = "", isGifted: Bool = false) {
         self.date = date

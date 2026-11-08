@@ -2,7 +2,7 @@ import AuthenticationServices
 import SwiftData
 import SwiftUI
 
-/// Trello connection: sign in, pick board, warmups list, and lesson package card, then sync.
+/// Trello connection: sign in, pick the lesson board and the lesson package card, then sync.
 /// Shown inside a Form, both in Settings and during onboarding.
 struct TrelloSections: View {
     @Environment(\.webAuthenticationSession) private var webAuth
@@ -15,6 +15,7 @@ struct TrelloSections: View {
     @AppStorage(Prefs.trelloListID) private var listID = ""
     @AppStorage(Prefs.trelloPackageCardID) private var packageCardID = ""
     @AppStorage(Prefs.trelloLastSync) private var lastSync: Double = 0
+    @AppStorage(Prefs.boardNotifications) private var notifyChanges = false
 
     @State private var boards: [TrelloBoard] = []
     @State private var lists: [TrelloList] = []
@@ -122,10 +123,6 @@ struct TrelloSections: View {
                 ForEach(boardChoices) { Text($0.name).tag($0.id) }
             }
             if !boardID.isEmpty {
-                Picker("Warmups list", selection: $listID) {
-                    if listID.isEmpty { Text("Choose").tag("") }
-                    ForEach(lists) { Text($0.name).tag($0.id) }
-                }
                 Picker("Lesson package card", selection: $packageCardID) {
                     Text("None").tag("")
                     ForEach(cards) { Text($0.name).tag($0.id) }
@@ -134,7 +131,7 @@ struct TrelloSections: View {
         } header: {
             Text("Trello")
         } footer: {
-            Text("Warmup tracks come from the cards in the warmups list. Lesson dates come from the package card's numbered lines, like \"4. 10/16\".")
+            Text("The app reads your whole board: cards with tracks or links become warmups, numbered cards like \"Thrive with Five\" become routines, and lesson dates come from the package card's numbered lines, like \"4. 10/16\".")
         }
         .task { if boards.isEmpty { await loadBoards() } }
         .task(id: boardID) {
@@ -148,15 +145,22 @@ struct TrelloSections: View {
             } label: {
                 Label(busy ? "Syncing..." : "Sync now", systemImage: "arrow.triangle.2.circlepath")
             }
-            .disabled(busy || listID.isEmpty)
+            .disabled(busy || boardID.isEmpty)
             if lastSync > 0 {
                 LabeledContent("Last synced",
                                value: Date(timeIntervalSince1970: lastSync).formatted(.relative(presentation: .named)))
             }
             status
+            Toggle("Notify me when the board changes", isOn: Binding(get: { notifyChanges }, set: { on in
+                if !on { notifyChanges = false; return }
+                Task {
+                    notifyChanges = await BoardRefresh.enableNotifications()
+                    if !notifyChanges { message = "Notifications are off for Vocal Practice. Turn them on in iOS Settings." }
+                }
+            }))
             Button("Disconnect Trello", role: .destructive, action: disconnect)
         } footer: {
-            Text("Disconnecting keeps the warmups and tracks already on this phone.")
+            Text("The app checks the board when you open it and in the background a few times a day. Changes show on Today. Disconnecting keeps the warmups and tracks already on this phone.")
         }
     }
 
@@ -193,7 +197,7 @@ struct TrelloSections: View {
     }
 
     /// Loads lists and cards for the chosen board. When the board changes (or nothing is picked yet),
-    /// picks the list named like "Warmups" and the card that looks like a lesson package.
+    /// picks the card that looks like a lesson package.
     private func loadBoardContents() async {
         guard let client = TrelloClient.current(), !boardID.isEmpty else { return }
         let boardChanged = loadedBoardID != nil && loadedBoardID != boardID
@@ -201,7 +205,7 @@ struct TrelloSections: View {
             listID = ""
             packageCardID = ""
         }
-        let autoPick = listID.isEmpty
+        let autoPick = packageCardID.isEmpty
         let board = boardID
         do {
             async let fetchedLists = client.lists(board: board)
@@ -210,7 +214,6 @@ struct TrelloSections: View {
             cards = try await fetchedCards
             loadedBoardID = board
             if autoPick {
-                listID = lists.first { $0.name.lowercased().contains("warm") }?.id ?? ""
                 packageCardID = cards.first {
                     TrelloMapping.looksLikePackage(name: $0.name, description: $0.desc ?? "")
                 }?.id ?? ""
@@ -237,6 +240,7 @@ struct TrelloSections: View {
         boardName = ""
         listID = ""
         packageCardID = ""
+        BoardStore.clear()
         boards = []
         lists = []
         cards = []
@@ -248,7 +252,7 @@ struct TrelloSections: View {
 /// First launch: connect Trello (or skip), then sync once so the Warmups tab is filled.
 struct OnboardingView: View {
     @Environment(\.modelContext) private var context
-    @AppStorage(Prefs.trelloListID) private var listID = ""
+    @AppStorage(Prefs.trelloBoardID) private var boardID = ""
     var onDone: () -> Void
 
     var body: some View {
@@ -262,9 +266,9 @@ struct OnboardingView: View {
                 TrelloSections()
 
                 Section {
-                    Button(listID.isEmpty ? "Skip for now" : "Done") {
+                    Button(boardID.isEmpty ? "Skip for now" : "Done") {
                         Task {
-                            if !listID.isEmpty { _ = try? await TrelloSync.run(context: context) }
+                            if !boardID.isEmpty { _ = try? await TrelloSync.run(context: context) }
                             onDone()
                         }
                     }

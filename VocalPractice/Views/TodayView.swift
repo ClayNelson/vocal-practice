@@ -8,6 +8,10 @@ struct TodayView: View {
     @Query(sort: \Lesson.date, order: .reverse) private var lessons: [Lesson]
 
     @AppStorage(Prefs.daysPerWeek) private var daysPerWeek = 4
+    @AppStorage(Prefs.routineChoice) private var routineChoice = ""
+    @AppStorage(Prefs.trelloRoutines) private var routinesData = Data()
+    @AppStorage(Prefs.trelloChanges) private var changesData = Data()
+    @AppStorage(Prefs.trelloChangesSeen) private var changesSeen: Double = 0
     @State private var minutes: Int?
     @State private var voiceCondition = 3
     @State private var activePlan: IdentifiedPlan?
@@ -16,11 +20,31 @@ struct TodayView: View {
     private var daysThisWeek: Int { WeeklyProgress.daysPracticed(sessionDates: sessions.map(\.date)) }
     private var practicedToday: Bool { sessions.contains { Calendar.current.isDateInToday($0.date) } }
 
+    private var visibleWarmups: [Warmup] { warmups.filter { !$0.isHidden } }
+    private var routines: [BoardMapping.Routine] { routinesData.decoded([BoardMapping.Routine].self) ?? [] }
+    private var unseenChanges: [BoardMapping.Change] {
+        (changesData.decoded([BoardMapping.Change].self) ?? []).filter { $0.date.timeIntervalSince1970 > changesSeen }
+    }
+    /// Warmups whose cards changed in the unseen edits, tagged New on Today.
+    private var newWarmupIDs: Set<UUID> {
+        let cards = Set(unseenChanges.compactMap(\.cardID))
+        return Set(visibleWarmups.filter { $0.trelloCardID.map(cards.contains) == true }.map(\.id))
+    }
+
+    /// The routine as warmup ids, through each card's warmup.
+    private var routineSlots: [[UUID]]? {
+        guard let routine = BoardStore.routine(choice: routineChoice, minutes: sessionMinutes, in: routines) else { return nil }
+        let byCard = Dictionary(visibleWarmups.compactMap { w in w.trelloCardID.map { ($0, w.id) } },
+                                uniquingKeysWith: { a, _ in a })
+        return routine.slots.map { $0.compactMap { byCard[$0] } }.filter { !$0.isEmpty }
+    }
+
     private var plan: SessionPlan {
         SessionPlanner.plan(minutes: sessionMinutes,
-                            warmups: warmups.map(\.snapshot),
+                            warmups: visibleWarmups.map(\.snapshot),
                             songs: songs.map { $0.snapshot(on: .now, fullRunsThisWeek: fullRunsThisWeek($0)) },
-                            voiceCondition: voiceCondition)
+                            voiceCondition: voiceCondition,
+                            routine: routineSlots)
     }
 
     /// Days this week the song was completed in a session; caps maintenance at 3 full runs.
@@ -46,13 +70,17 @@ struct TodayView: View {
                             Text("\(daysThisWeek) of \(daysPerWeek) days").font(.title2.bold())
                             Text(practicedToday ? "Practiced today" : "Not yet today")
                                 .foregroundStyle(practicedToday ? .green : .secondary)
-                            if let last = lessons.first {
+                            if let last = lessons.first(where: { !$0.wasCanceled }) {
                                 Text("Last lesson \(last.date.formatted(date: .abbreviated, time: .omitted))")
                                     .font(.footnote).foregroundStyle(.secondary)
                             }
                         }
                     }
                     .padding(.vertical, 8)
+                }
+
+                if !unseenChanges.isEmpty {
+                    NewFromBoardCard(changes: unseenChanges) { BoardStore.markSeen(); changesSeen = UserDefaults.standard.double(forKey: Prefs.trelloChangesSeen) }
                 }
 
                 if let goal = activeGoal {
@@ -77,8 +105,12 @@ struct TodayView: View {
                     .pickerStyle(.segmented)
                 }
 
+                if !routines.isEmpty {
+                    RoutinePickerSection(routines: routines, minutes: sessionMinutes, choice: $routineChoice)
+                }
+
                 Section("Warmups (\(minutesOf(plan.warmups)) min)") {
-                    ForEach(plan.warmups, id: \.id) { PlanRow(item: $0) }
+                    ForEach(plan.warmups, id: \.id) { PlanRow(item: $0, isNew: newWarmupIDs.contains($0.id)) }
                 }
                 Section("Songs (\(minutesOf(plan.songs)) min)") {
                     if plan.songs.isEmpty {
@@ -124,11 +156,19 @@ struct IdentifiedPlan: Identifiable {
 
 struct PlanRow: View {
     let item: PlanItem
+    var isNew = false
     var body: some View {
         HStack {
             Image(systemName: icon).foregroundStyle(.indigo).frame(width: 24)
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.title)
+                HStack(spacing: 6) {
+                    Text(item.title)
+                    if isNew {
+                        Text("New").font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Color.indigo.opacity(0.15), in: Capsule()).foregroundStyle(.indigo)
+                    }
+                }
                 if let mode = item.songMode?.label {
                     Text(mode).font(.caption).foregroundStyle(.secondary)
                 }
