@@ -254,6 +254,7 @@ struct OnboardingView: View {
     var body: some View {
         NavigationStack {
             Form {
+                StudioLogoHeader()
                 Section {
                     Text("Vocal Practice turns your lessons into a daily routine: it builds each session from your teacher's warmups and your songs, reminds you on practice days, and records a take of everything so you can hear progress.")
                 } header: { Text("Welcome") }
