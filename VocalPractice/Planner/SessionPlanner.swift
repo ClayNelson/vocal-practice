@@ -50,26 +50,86 @@ public struct SongSnapshot: Equatable, Sendable {
     public var minutes: Int
     public var showcase: Bool
     public var lastPracticed: Date?
+    public var goalDate: Date?
+    /// Set when the song has a plan and today falls inside one of its phases.
+    public var planContext: SongPlanContext?
 
     public init(id: UUID = UUID(), title: String, status: SongStatus, minutes: Int,
-                showcase: Bool = false, lastPracticed: Date? = nil) {
+                showcase: Bool = false, lastPracticed: Date? = nil,
+                goalDate: Date? = nil, planContext: SongPlanContext? = nil) {
         self.id = id; self.title = title; self.status = status; self.minutes = minutes
         self.showcase = showcase; self.lastPracticed = lastPracticed
+        self.goalDate = goalDate; self.planContext = planContext
+    }
+}
+
+/// What today's phase of a song's plan asks for.
+public struct SongPlanContext: Equatable, Sendable {
+    public var block: SongBlock
+    public var minutesPerPass: Int
+    /// The phase's focus sections, in plan order.
+    public var focusSections: [SectionSnapshot]
+    public var fullRunsThisWeek: Int
+
+    public init(block: SongBlock, minutesPerPass: Int, focusSections: [SectionSnapshot] = [], fullRunsThisWeek: Int = 0) {
+        self.block = block; self.minutesPerPass = minutesPerPass
+        self.focusSections = focusSections; self.fullRunsThisWeek = fullRunsThisWeek
+    }
+}
+
+public struct SectionSnapshot: Equatable, Sendable {
+    public var id: String
+    public var title: String
+    public var focus: String
+    /// high, medium, or low
+    public var difficulty: String
+    public var order: Int
+    /// free, pressed, or cracked
+    public var lastRating: String?
+    public var lastPracticed: Date?
+
+    public init(id: String, title: String, focus: String = "", difficulty: String = "medium", order: Int = 0,
+                lastRating: String? = nil, lastPracticed: Date? = nil) {
+        self.id = id; self.title = title; self.focus = focus; self.difficulty = difficulty; self.order = order
+        self.lastRating = lastRating; self.lastPracticed = lastPracticed
+    }
+}
+
+/// How a song item is practiced in a session, from its plan's current phase.
+public enum SongMode: Equatable, Sendable {
+    case normal
+    case listen
+    case section(id: String, title: String, focus: String)
+    case fullRun
+    case taper
+
+    /// Shown under the song title on Today; nil for an unplanned song.
+    public var label: String? {
+        switch self {
+        case .normal: nil
+        case .listen: "Listen"
+        case .section(_, let title, _): "Section: \(title)"
+        case .fullRun: "Full run"
+        case .taper: "Taper run"
+        }
     }
 }
 
 public enum PlanItem: Equatable, Sendable {
     case warmup(WarmupSnapshot)
-    case song(SongSnapshot)
+    case song(SongSnapshot, SongMode = .normal)
 
     public var id: UUID {
-        switch self { case .warmup(let w): w.id; case .song(let s): s.id }
+        switch self { case .warmup(let w): w.id; case .song(let s, _): s.id }
     }
     public var title: String {
-        switch self { case .warmup(let w): w.title; case .song(let s): s.title }
+        switch self { case .warmup(let w): w.title; case .song(let s, _): s.title }
     }
     public var minutes: Int {
-        switch self { case .warmup(let w): w.minutes; case .song(let s): s.minutes }
+        switch self { case .warmup(let w): w.minutes; case .song(let s, _): s.minutes }
+    }
+    public var songMode: SongMode? {
+        if case .song(_, let mode) = self { mode } else { nil }
     }
 }
 
@@ -105,7 +165,7 @@ public enum SessionPlanner {
         let warmupItems = fill(budget: warmupBudget,
                                from: warmupCandidates(warmups, gentle: gentle).map(PlanItem.warmup))
         let songItems = fill(budget: songBudget,
-                             from: songCandidates(songs).map(PlanItem.song))
+                             from: songItems(songCandidates(songs), gentle: gentle))
         return SessionPlan(targetMinutes: minutes, warmups: warmupItems, songs: songItems)
     }
 
@@ -124,12 +184,64 @@ public enum SessionPlanner {
         return ladders.sorted(by: leastRecent) + standalone
     }
 
+    /// Songs with an active plan first (nearest goal first), then showcase songs, then Learning,
+    /// then least recently practiced. A planned song is practiced whatever its status, unless retired.
     static func songCandidates(_ songs: [SongSnapshot]) -> [SongSnapshot] {
-        songs.filter { $0.status.isPracticeEligible }.sorted { a, b in
+        songs.filter { $0.status.isPracticeEligible || ($0.planContext != nil && $0.status != .retired) }.sorted { a, b in
+            let aPlanned = a.planContext != nil, bPlanned = b.planContext != nil
+            if aPlanned != bPlanned { return aPlanned }
+            if aPlanned, a.goalDate != b.goalDate {
+                return (a.goalDate ?? .distantFuture) < (b.goalDate ?? .distantFuture)
+            }
             if a.showcase != b.showcase { return a.showcase }
             let aLearning = a.status == .learning, bLearning = b.status == .learning
             if aLearning != bLearning { return aLearning }
             return leastRecent(a.lastPracticed, b.lastPracticed)
+        }
+    }
+
+    /// Turns each song into a session item following its plan's phase. Maintenance songs drop out
+    /// after 3 full runs in the week; taper songs drop out on a rough voice.
+    static func songItems(_ songs: [SongSnapshot], gentle: Bool) -> [PlanItem] {
+        songs.compactMap { song in
+            guard let context = song.planContext else { return .song(song, .normal) }
+            var item = song
+            item.minutes = context.minutesPerPass
+            switch context.block {
+            case .listen:
+                return .song(item, .listen)
+            case .sections:
+                guard let section = pickSection(context.focusSections) else { return .song(item, .fullRun) }
+                return .song(item, .section(id: section.id, title: section.title, focus: section.focus))
+            case .fullRun:
+                item.minutes = context.minutesPerPass * 2
+                return .song(item, .fullRun)
+            case .maintenance:
+                return context.fullRunsThisWeek < 3 ? .song(item, .fullRun) : nil
+            case .taper:
+                return gentle ? nil : .song(item, .taper)
+            }
+        }
+    }
+
+    /// The hardest unresolved section: cracked, then pressed, then never practiced, then oldest.
+    /// Ties go to difficulty (high first), then plan order.
+    static func pickSection(_ sections: [SectionSnapshot]) -> SectionSnapshot? {
+        func bucket(_ s: SectionSnapshot) -> Int {
+            switch s.lastRating {
+            case "cracked": 0
+            case "pressed": 1
+            default: s.lastPracticed == nil ? 2 : 3
+            }
+        }
+        func difficulty(_ s: SectionSnapshot) -> Int {
+            switch s.difficulty { case "high": 0; case "medium": 1; default: 2 }
+        }
+        return sections.min { a, b in
+            if bucket(a) != bucket(b) { return bucket(a) < bucket(b) }
+            if bucket(a) == 3, let da = a.lastPracticed, let db = b.lastPracticed, da != db { return da < db }
+            if difficulty(a) != difficulty(b) { return difficulty(a) < difficulty(b) }
+            return a.order < b.order
         }
     }
 

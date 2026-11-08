@@ -4,7 +4,8 @@ import SwiftUI
 @main
 struct VocalPracticeApp: App {
     let container: ModelContainer = {
-        let schema = Schema([Warmup.self, Song.self, PracticeSession.self, Take.self, Lesson.self])
+        let schema = Schema([Warmup.self, Song.self, SongSection.self, Checkpoint.self,
+                             PracticeSession.self, Take.self, Lesson.self])
         // No automatic seed: students start empty and fill from Trello during onboarding.
         // Clay's starter set is available from Settings > Sample content.
         return try! ModelContainer(for: schema)

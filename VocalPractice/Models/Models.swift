@@ -53,6 +53,20 @@ final class Song {
     var lastPracticed: Date?
     var createdAt: Date = Date()
 
+    /// The song's plan.json text, the source of truth. The fields below mirror it for display
+    /// and queries; only PlanStore writes them.
+    var planJSON: String?
+    var goalType: String?
+    var goalLabel: String?
+    var goalDate: Date?
+    var goalDateIsApprox: Bool = false
+    var originalKey: String?
+    var keyOptionsRaw: String = ""
+    var rangeLowMidi: Int?
+    var rangeHighMidi: Int?
+    @Relationship(deleteRule: .cascade, inverse: \SongSection.song) var sections: [SongSection] = []
+    @Relationship(deleteRule: .cascade, inverse: \Checkpoint.song) var checkpoints: [Checkpoint] = []
+
     var status: SongStatus {
         get { SongStatus(rawValue: statusRaw) ?? .learning }
         set { statusRaw = newValue.rawValue }
@@ -96,11 +110,60 @@ final class Take {
     var audioFileName: String = ""
     var date: Date = Date()
     var session: PracticeSession?
+    /// The plan section this take worked on, if any.
+    var sectionID: String?
+    /// free, pressed, or cracked
+    var rating: String?
 
     init(itemID: UUID, itemTitle: String, audioFileName: String) {
         self.itemID = itemID
         self.itemTitle = itemTitle
         self.audioFileName = audioFileName
+    }
+}
+
+/// A hard spot from a song's plan, with how it went last time.
+@Model
+final class SongSection {
+    var id: UUID = UUID()
+    /// The plan's section id, e.g. top-phrases.
+    var sectionID: String = ""
+    var title: String = ""
+    var difficulty: String = Difficulty.medium.rawValue
+    var focus: String = ""
+    var order: Int = 0
+    var lastPracticed: Date?
+    /// free, pressed, or cracked
+    var lastRating: String?
+    var song: Song?
+
+    init(sectionID: String, title: String, difficulty: String, focus: String, order: Int) {
+        self.sectionID = sectionID
+        self.title = title
+        self.difficulty = difficulty
+        self.focus = focus
+        self.order = order
+    }
+
+    var snapshot: SectionSnapshot {
+        SectionSnapshot(id: sectionID, title: title, focus: focus, difficulty: difficulty, order: order,
+                        lastRating: lastRating, lastPracticed: lastPracticed)
+    }
+}
+
+/// A dated decision from a song's plan, like "Lock key".
+@Model
+final class Checkpoint {
+    var id: UUID = UUID()
+    var title: String = ""
+    var due: Date = Date()
+    var done: Bool = false
+    var song: Song?
+
+    init(title: String, due: Date, done: Bool) {
+        self.title = title
+        self.due = due
+        self.done = done
     }
 }
 
