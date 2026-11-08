@@ -64,22 +64,31 @@ enum TrelloSync {
         var report = Report()
         async let fetchedLists = client.lists(board: boardID)
         async let fetchedCards = client.cardsWithAttachments(board: boardID)
-        let lists = try await fetchedLists
-        let listIndex = Dictionary(lists.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { a, _ in a })
-        let listNames = Dictionary(lists.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
-        // Board order: lists left to right, then cards top to bottom. Cards in archived lists are left out.
-        let cards = try await fetchedCards
-            .filter { listIndex[$0.idList ?? ""] != nil }
-            .sorted { (listIndex[$0.idList ?? ""] ?? 0, $0.pos ?? 0) < (listIndex[$1.idList ?? ""] ?? 0, $1.pos ?? 0) }
-        let infos = cards.map {
-            BoardMapping.CardInfo(id: $0.id, name: $0.name, desc: $0.desc ?? "", listID: $0.idList ?? "",
-                                  listName: listNames[$0.idList ?? ""] ?? "", hasAudio: $0.audioAttachment != nil)
+        let lists: [TrelloList] = try await fetchedLists
+        var listIndex: [String: Int] = [:]
+        var listNames: [String: String] = [:]
+        for (index, list) in lists.enumerated() {
+            listIndex[list.id] = index
+            listNames[list.id] = list.name
         }
-        let kinds = BoardMapping.classify(infos, packageCardID: packageID)
-        let canonical = BoardMapping.canonicalIDs(infos, kinds: kinds)
+        // Board order: lists left to right, then cards top to bottom. Cards in archived lists are left out.
+        let fetched: [TrelloCard] = try await fetchedCards
+        let cards: [TrelloCard] = fetched
+            .filter { listIndex[$0.idList ?? ""] != nil }
+            .sorted { a, b in boardOrder(a, listIndex).lexicographicallyPrecedes(boardOrder(b, listIndex)) }
+        let infos: [BoardMapping.CardInfo] = cards.map { card in
+            let listID = card.idList ?? ""
+            return BoardMapping.CardInfo(id: card.id, name: card.name, desc: card.desc ?? "", listID: listID,
+                                         listName: listNames[listID] ?? "", hasAudio: card.audioAttachment != nil)
+        }
+        let kinds: [String: BoardMapping.Kind] = BoardMapping.classify(infos, packageCardID: packageID)
+        let canonical: [String: String] = BoardMapping.canonicalIDs(infos, kinds: kinds)
         var existing = try context.fetch(FetchDescriptor<Warmup>())
+        let warmupCards: [TrelloCard] = cards.filter { card in
+            kinds[card.id] == BoardMapping.Kind.warmup && canonical[card.id] == card.id
+        }
 
-        for card in cards where kinds[card.id] == .warmup && canonical[card.id] == card.id {
+        for card in warmupCards {
             let shape = TrelloMapping.warmupShape(forCardName: card.name)
             let warmup: Warmup
             if let match = existing.first(where: { $0.trelloCardID == card.id })
@@ -127,7 +136,7 @@ enum TrelloSync {
         }
 
         // A summary card synced as a warmup by an older version is hidden, not deleted.
-        let summaryIDs = Set(infos.filter { kinds[$0.id] == .routineSummary }.map(\.id))
+        let summaryIDs: Set<String> = Set(infos.filter { info in kinds[info.id] == BoardMapping.Kind.routineSummary }.map { $0.id })
         for warmup in existing where warmup.trelloCardID.map(summaryIDs.contains) == true { warmup.isHidden = true }
         BoardStore.routines = BoardMapping.routines(infos, kinds: kinds)
 
@@ -180,6 +189,11 @@ enum TrelloSync {
         BoardStore.add(changes)
         defaults.set(now.timeIntervalSince1970, forKey: Prefs.trelloActivitySince)
         return changes
+    }
+
+    /// Sort key for board order: the list's position, then the card's position in it.
+    private static func boardOrder(_ card: TrelloCard, _ listIndex: [String: Int]) -> [Double] {
+        [Double(listIndex[card.idList ?? ""] ?? 0), card.pos ?? 0]
     }
 
     private static func hasTrack(_ warmup: Warmup) -> Bool {
