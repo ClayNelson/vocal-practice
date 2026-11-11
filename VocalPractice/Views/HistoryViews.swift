@@ -7,7 +7,7 @@ struct SessionHistoryView: View {
     @Query(sort: \PracticeSession.date, order: .reverse) private var sessions: [PracticeSession]
 
     var body: some View {
-        List {
+        CanvasList {
             if sessions.isEmpty {
                 ContentUnavailableView("No sessions yet", systemImage: "music.mic",
                                        description: Text("Finish a session on the Today tab and it shows up here."))
@@ -51,7 +51,7 @@ struct SessionDetailView: View {
     }
 
     var body: some View {
-        Form {
+        CanvasForm {
             Section {
                 LabeledContent("Date", value: session.date.formatted(date: .long, time: .shortened))
                 LabeledContent("Planned", value: "\(session.plannedMinutes) min")

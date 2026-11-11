@@ -19,7 +19,7 @@ struct WarmupsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            CanvasList {
                 let routines = routinesData.decoded([BoardMapping.Routine].self) ?? []
                 if !routines.isEmpty {
                     Section("Routines from your board") {
@@ -99,7 +99,7 @@ struct WarmupsView: View {
         NavigationLink(value: warmup) {
             HStack {
                 Image(systemName: warmup.isSolid ? "checkmark.circle.fill" : (isCurrent ? "arrow.right.circle.fill" : "circle"))
-                    .foregroundStyle(warmup.isSolid ? .green : (isCurrent ? .indigo : .secondary))
+                    .foregroundStyle(warmup.isSolid ? .green : (isCurrent ? .gold : .secondary))
                 VStack(alignment: .leading) {
                     Text(warmup.title)
                     Text(warmup.audioFileName == nil ? "No track" : "Track ready")
@@ -129,7 +129,7 @@ struct WarmupDetailView: View {
     private var playingTrack: Bool { playingTake == nil && player.isPlaying }
 
     var body: some View {
-        Form {
+        CanvasForm {
             Section {
                 TextField("Title", text: $warmup.title)
                 Stepper("\(warmup.minutes) min per session", value: $warmup.minutes, in: 1...15)
@@ -188,7 +188,7 @@ struct AddWarmupSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            CanvasForm {
                 TextField("Title", text: $title)
                 Stepper("\(minutes) minutes", value: $minutes, in: 1...15)
             }
@@ -217,7 +217,7 @@ struct SongsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            CanvasList {
                 ForEach(SongStatus.allCases) { status in
                     let group = songs.filter { $0.status == status }
                     if !group.isEmpty {
@@ -280,7 +280,7 @@ struct SongDetailView: View {
     private var shownTakes: [Take] { sectionFilter.map { id in takes.filter { $0.sectionID == id } } ?? takes }
 
     var body: some View {
-        Form {
+        CanvasForm {
             Section {
                 TextField("Title", text: $song.title)
                 TextField("Artist", text: $song.artist)
@@ -325,7 +325,7 @@ struct LessonsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            CanvasList {
                 StudioLogoHeader()
                 Section("Package") {
                     LabeledContent("Lessons used", value: "\(used) of \(packageSize)")
@@ -376,7 +376,7 @@ struct LessonsView: View {
 struct LessonDetailView: View {
     @Bindable var lesson: Lesson
     var body: some View {
-        Form {
+        CanvasForm {
             DatePicker("Date", selection: $lesson.date, displayedComponents: .date)
             Stepper("Lesson \(lesson.number)", value: $lesson.number, in: 0...200)
             Toggle("Gifted / makeup", isOn: $lesson.isGifted)
@@ -404,7 +404,7 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            CanvasForm {
                 Section {
                     Stepper("\(daysPerWeek) days a week", value: $daysPerWeek, in: 3...5)
                     Text("Nicolette's plan: \(daysPerWeek) days at \(SessionPlanner.defaultMinutes(daysPerWeek: daysPerWeek)) minutes, half warmups and half songs.")
@@ -416,8 +416,12 @@ struct SettingsView: View {
                     HStack {
                         ForEach(1...7, id: \.self) { day in
                             let on = days.contains(day)
-                            Button(String(symbols[day - 1].prefix(2))) { toggle(day) }
-                                .buttonStyle(.bordered).tint(on ? .indigo : .gray)
+                            Button { toggle(day) } label: {
+                                Text(String(symbols[day - 1].prefix(2))).font(.subheadline).lineLimit(1).fixedSize()
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered).buttonBorderShape(.capsule).controlSize(.small)
+                            .tint(on ? .gold : .gray)
                                 .accessibilityAddTraits(on ? .isSelected : [])
                         }
                     }

@@ -42,7 +42,7 @@ struct RootView: View {
             LessonsView().tabItem { Label("Lessons", systemImage: "graduationcap") }
             SettingsView().tabItem { Label("Settings", systemImage: "gearshape") }
         }
-        .tint(.indigo)
+        .tint(.gold)
         .sheet(isPresented: Binding(get: { !onboarded }, set: { if !$0 { onboarded = true } })) {
             OnboardingView { onboarded = true }
         }
