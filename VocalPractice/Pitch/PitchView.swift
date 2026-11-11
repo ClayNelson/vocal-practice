@@ -42,9 +42,10 @@ struct PitchView: View {
                 Label(tracker.isRunning ? "Stop" : "Start listening",
                       systemImage: tracker.isRunning ? "stop.fill" : "mic.fill")
                     .frame(maxWidth: .infinity).padding(.vertical, 6)
+                    .foregroundStyle(tracker.isRunning ? Color.white : Color.onInk)
             }
             .buttonStyle(.borderedProminent)
-            .tint(tracker.isRunning ? .red : .indigo)
+            .tint(tracker.isRunning ? .red : .ink)
         }
         .padding()
         .navigationTitle("Pitch")
@@ -145,11 +146,11 @@ private struct PitchGraph: View {
                 let pt = CGPoint(x: x(p.time), y: y(m))
                 if penDown { path.addLine(to: pt) } else { path.move(to: pt); penDown = true }
             }
-            ctx.stroke(path, with: .color(.indigo), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+            ctx.stroke(path, with: .color(.gold), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
 
             if let m = history.last?.midi {
                 let pt = CGPoint(x: x(latest), y: y(m))
-                ctx.fill(Path(ellipseIn: CGRect(x: pt.x - 6, y: pt.y - 6, width: 12, height: 12)), with: .color(.indigo))
+                ctx.fill(Path(ellipseIn: CGRect(x: pt.x - 6, y: pt.y - 6, width: 12, height: 12)), with: .color(.gold))
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 16))

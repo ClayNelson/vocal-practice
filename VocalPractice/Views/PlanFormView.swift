@@ -29,7 +29,7 @@ struct PlanFormView: View {
     private var goal: PlanDate { PlanDate(goalDate, calendar: .current) }
 
     var body: some View {
-        Form {
+        CanvasForm {
             Section("Goal") {
                 Picker("Type", selection: $goalType) {
                     ForEach(GoalType.allCases, id: \.self) { Text($0.label).tag($0) }

@@ -21,7 +21,7 @@ struct GoalCard: View {
                 Text("\(plan.goal.displayLabel) · \(PlanFormat.countdown(from: today, to: plan.goal.date, approx: plan.goal.dateIsApprox))")
                     .font(.headline)
                 if let phase = PhaseResolver.current(plan: plan, on: today) {
-                    Text(phase.title).foregroundStyle(.indigo)
+                    Text(phase.title).foregroundStyle(.gold)
                 }
                 if let next = nextCheckpoint {
                     let overdue = PlanDate(next.due, calendar: .current) < today
@@ -165,7 +165,7 @@ struct SongPlanSections: View {
                                 .font(.caption).foregroundStyle(Color.secondary)
                         }
                         if sectionFilter == section.sectionID {
-                            Image(systemName: "line.3.horizontal.decrease.circle.fill").foregroundStyle(.indigo)
+                            Image(systemName: "line.3.horizontal.decrease.circle.fill").foregroundStyle(.gold)
                         }
                     }
                 }
@@ -235,7 +235,7 @@ struct PhaseTimeline: View {
             let isCurrent = phase.id == current
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: isCurrent ? "circle.inset.filled" : "circle")
-                    .foregroundStyle(isCurrent ? .indigo : .secondary)
+                    .foregroundStyle(isCurrent ? .gold : .secondary)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(phase.title).fontWeight(isCurrent ? .semibold : .regular)
                     Text("\(Self.span(phase)) · \(phase.songBlock.label)")
@@ -245,7 +245,7 @@ struct PhaseTimeline: View {
                     }
                 }
             }
-            .listRowBackground(isCurrent ? Color.indigo.opacity(0.08) : nil)
+            .listRowBackground(isCurrent ? Color.gold.opacity(0.08) : nil)
         }
     }
 

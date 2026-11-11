@@ -62,7 +62,7 @@ struct TodayView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            CanvasList {
                 Section {
                     HStack(spacing: 20) {
                         WeekRing(done: daysThisWeek, target: daysPerWeek)
@@ -135,8 +135,10 @@ struct TodayView: View {
                 Button { activePlan = IdentifiedPlan(plan: plan) } label: {
                     Label("Start \(sessionMinutes)-minute session", systemImage: "play.fill")
                         .frame(maxWidth: .infinity).padding(.vertical, 6)
+                        .foregroundStyle(Color.onInk)
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(.ink)
                 .padding()
                 .disabled(plan.items.isEmpty)
             }
@@ -159,14 +161,14 @@ struct PlanRow: View {
     var isNew = false
     var body: some View {
         HStack {
-            Image(systemName: icon).foregroundStyle(.indigo).frame(width: 24)
+            Image(systemName: icon).foregroundStyle(.gold).frame(width: 24)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(item.title)
                     if isNew {
                         Text("New").font(.caption2.weight(.semibold))
                             .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(Color.indigo.opacity(0.15), in: Capsule()).foregroundStyle(.indigo)
+                            .background(Color.gold.opacity(0.15), in: Capsule()).foregroundStyle(.gold)
                     }
                 }
                 if let mode = item.songMode?.label {
@@ -190,7 +192,7 @@ struct WeekRing: View {
             Circle().stroke(.quaternary, lineWidth: 10)
             Circle()
                 .trim(from: 0, to: min(1, Double(done) / Double(max(target, 1))))
-                .stroke(done >= target ? Color.green : .indigo, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                .stroke(done >= target ? Color.green : .gold, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Image(systemName: done >= target ? "checkmark" : "music.mic").font(.title3)
         }

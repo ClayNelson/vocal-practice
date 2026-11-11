@@ -83,12 +83,12 @@ struct KeyRing: View {
                 let point = CGPoint(x: center.x + radius * cos(angle), y: center.y + radius * sin(angle))
                 let dot = CGRect(x: point.x - 22, y: point.y - 22, width: 44, height: 44)
                 let strength = weights[pc] / most
-                ctx.fill(Path(ellipseIn: dot), with: .color(.indigo.opacity(0.08 + 0.8 * strength)))
+                ctx.fill(Path(ellipseIn: dot), with: .color(.gold.opacity(0.08 + 0.8 * strength)))
                 if inKey.contains(pc) {
-                    ctx.stroke(Path(ellipseIn: dot.insetBy(dx: 1.5, dy: 1.5)), with: .color(.indigo), lineWidth: 3)
+                    ctx.stroke(Path(ellipseIn: dot.insetBy(dx: 1.5, dy: 1.5)), with: .color(.gold), lineWidth: 3)
                 }
                 if pc == key?.tonic {
-                    ctx.stroke(Path(ellipseIn: dot.insetBy(dx: -4, dy: -4)), with: .color(.indigo), lineWidth: 2)
+                    ctx.stroke(Path(ellipseIn: dot.insetBy(dx: -4, dy: -4)), with: .color(.gold), lineWidth: 2)
                 }
                 if pc == singing {
                     ctx.fill(Path(ellipseIn: CGRect(x: point.x - 5, y: dot.maxY + 2, width: 10, height: 10)), with: .color(.orange))

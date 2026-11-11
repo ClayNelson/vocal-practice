@@ -101,7 +101,8 @@ struct SessionPlayerView: View {
 
             HStack {
                 Button("Skip") { advance(completedCurrent: false) }.buttonStyle(.bordered)
-                Button("Done, next") { advance(completedCurrent: true) }.buttonStyle(.borderedProminent)
+                Button { advance(completedCurrent: true) } label: { Text("Done, next").foregroundStyle(Color.onInk) }
+                    .buttonStyle(.borderedProminent).tint(.ink)
             }
             .padding(.bottom)
         }
@@ -111,7 +112,7 @@ struct SessionPlayerView: View {
     private func details(for item: PlanItem) -> some View {
         if case .song(let s, let mode) = item, let song = songs.first(where: { $0.id == s.id }) {
             VStack(spacing: 8) {
-                if let label = mode.label { Text(label).font(.headline).foregroundStyle(.indigo) }
+                if let label = mode.label { Text(label).font(.headline).foregroundStyle(.gold) }
                 if case .section(_, let title, let focus) = mode {
                     Text(title).font(.title3.bold())
                     if !focus.isEmpty { Text(focus).multilineTextAlignment(.center).padding(.horizontal) }
@@ -143,7 +144,7 @@ struct SessionPlayerView: View {
     // MARK: Summary
 
     private var summary: some View {
-        Form {
+        CanvasForm {
             Section {
                 LabeledContent("Completed", value: "\(completed.count) of \(plan.items.count)")
                 LabeledContent("Takes recorded", value: "\(takes.count)")
