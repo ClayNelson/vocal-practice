@@ -4,17 +4,31 @@ import SwiftUI
 /// and your held range for this sitting.
 struct PitchView: View {
     @State private var tracker = PitchTracker()
+    @State private var mode = Mode.pitch
+
+    enum Mode: String, CaseIterable { case pitch = "Pitch", key = "Key" }
 
     var body: some View {
         VStack(spacing: 16) {
-            NoteReadout(midi: tracker.current)
+            Picker("Mode", selection: $mode) {
+                ForEach(Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
 
-            PitchGraph(history: tracker.history, seconds: tracker.historySeconds)
-                .frame(maxWidth: .infinity)
-                .frame(height: 280)
-                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+            switch mode {
+            case .pitch:
+                NoteReadout(midi: tracker.current)
 
-            RangeCard(range: tracker.range, reset: tracker.resetRange)
+                PitchGraph(history: tracker.history, seconds: tracker.historySeconds)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 280)
+                    .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+
+                RangeCard(range: tracker.range, reset: tracker.resetRange)
+            case .key:
+                KeyPanel(finder: tracker.keyFinder, current: tracker.current, range: tracker.range,
+                         reset: tracker.resetKey)
+            }
 
             if let error = tracker.error {
                 Text(error).font(.footnote).foregroundStyle(.red)

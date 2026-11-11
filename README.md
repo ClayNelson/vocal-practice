@@ -120,6 +120,15 @@ Validate a file on a Mac with `python3 tools/validate_plan.py path/to/plan.json`
 
 Tap the tuning fork on the Today screen. Sing and you get the note name, a sharp or flat meter, a scrolling pitch line over note lanes, and your range for the sitting (lowest and highest notes held for half a second). Use headphones if anything is playing, or the mic will hear the speaker.
 
+**Key mode** (the Key tab at the top of the pitch screen) finds the key you're singing in. Sing a song or a long phrase:
+- The ring shows the 12 notes around the circle of fifths, brighter the longer you hold each one. The orange dot is the note you're on now.
+- After about 6 seconds of held notes it shows "Probably A major" plus the next two candidates. Around 15 seconds, with a clear winner, it settles and outlines the key's notes.
+- Notes held under 0.15 seconds (scoops, passing notes) don't count.
+- When a key and its relative minor are too close to call from the melody alone (A major and F♯ minor share every note), it shows both rather than guess.
+- **Which key suits your voice:** for a song whose plan has a range, it moves the range into each key option and checks it against the range you've held this sitting: "Top note F♯4 is 1 semitone above your high" or "Fits, 1 semitone of room up top". It also includes the key you sang. **Use A for Oh, Pretty Woman** sets the song's key and makes it the plan's first key option.
+
+It uses the Krumhansl-Kessler key profiles (`Pitch/KeyFinder.swift`), all on the phone.
+
 The detector is YIN running on the live mic (`Pitch/PitchDetector.swift`), about 50 readings a second, with no network or account. It is the base for native exercises that will replace the Singing Carrots web step.
 
 ## Layout
