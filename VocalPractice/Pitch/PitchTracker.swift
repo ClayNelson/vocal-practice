@@ -17,6 +17,7 @@ final class PitchTracker {
     private(set) var level: Double = 0
     private(set) var history: [Point] = []
     private(set) var range = RangeTracker()
+    private(set) var keyFinder = KeyFinder()
     private(set) var error: String?
 
     /// Seconds of history kept for the scrolling graph.
@@ -76,12 +77,16 @@ final class PitchTracker {
     func resetRange() { range.reset() }
 
     @MainActor
+    func resetKey() { keyFinder.reset() }
+
+    @MainActor
     private func receive(_ result: Analyzer.Result) {
         let now = Date().timeIntervalSince(startTime)
         let midi = smoother.push(result.reading)
         current = midi
         level = result.level
         range.update(midi: midi, time: now)
+        keyFinder.update(midi: midi, time: now)
         history.append(Point(time: now, midi: midi))
         history.removeAll { now - $0.time > historySeconds }
     }

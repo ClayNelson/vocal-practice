@@ -37,6 +37,7 @@ No App Store release, no accounts or backend of our own. Every per-person creden
 | Session player, takes, solid flags | Built |
 | Warmups, Songs, Lessons, Settings, reminders | Built |
 | Pitch screen (YIN detector, live note, range for the sitting) | Built, tested |
+| Key finder (live key from held notes, key fit against your range) | Built, tested |
 | Trello sign-in, pull sync, onboarding (v1.1) | Built, tested (mapping); awaiting first TestFlight run |
 | TestFlight from GitHub Actions | Built |
 | Song plans and showcase mode (M1) | Built, tested; awaiting first TestFlight run |
