@@ -19,7 +19,7 @@ targets:
     info:
       path: VocalPractice/Info.plist
       properties:
-        CFBundleDisplayName: Vocal Practice
+        CFBundleDisplayName: Mesmerize
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
